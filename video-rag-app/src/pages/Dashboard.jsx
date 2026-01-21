@@ -65,7 +65,7 @@ export default function Dashboard() {
     const recentVideos = videos.slice(0, 6)
 
     return (
-        <div className="min-h-screen bg-background-light">
+        <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
             <Header
                 title="Video-RAG"
                 icon={{ name: 'smart_display', bg: 'bg-primary', color: 'text-white' }}
@@ -80,19 +80,19 @@ export default function Dashboard() {
                         animate={{ opacity: 1, x: 0 }}
                         className="lg:col-span-1"
                     >
-                        <h2 className="text-[#0d141b] text-xl lg:text-2xl font-bold leading-tight tracking-[-0.015em] mb-4 pl-1">
+                        <h2 className="text-[#0d141b] dark:text-white text-xl lg:text-2xl font-bold leading-tight tracking-[-0.015em] mb-4 pl-1">
                             New Analysis
                         </h2>
                         <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-6 transition-all duration-300 hover:shadow-glow">
                             {/* Mode Toggle */}
                             <div className="flex mb-5">
-                                <div className="flex h-12 flex-1 items-center justify-center rounded-xl bg-[#e7edf3] p-1">
+                                <div className="flex h-12 flex-1 items-center justify-center rounded-xl bg-[#e7edf3] dark:bg-slate-700 p-1">
                                     <button
                                         type="button"
                                         onClick={() => setMode('link')}
                                         className={`flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-4 text-sm font-semibold transition-all ${mode === 'link'
-                                            ? 'bg-white shadow-sm text-[#0d141b]'
-                                            : 'text-[#4c739a] hover:bg-white/50'
+                                            ? 'bg-white dark:bg-slate-600 shadow-sm text-[#0d141b] dark:text-white'
+                                            : 'text-[#4c739a] dark:text-gray-300 hover:bg-white/50 dark:hover:bg-slate-600/50'
                                             }`}
                                     >
                                         <span className="material-symbols-outlined text-lg mr-2">link</span>
@@ -102,8 +102,8 @@ export default function Dashboard() {
                                         type="button"
                                         onClick={() => setMode('upload')}
                                         className={`flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-4 text-sm font-semibold transition-all ${mode === 'upload'
-                                            ? 'bg-white shadow-sm text-[#0d141b]'
-                                            : 'text-[#4c739a] hover:bg-white/50'
+                                            ? 'bg-white dark:bg-slate-600 shadow-sm text-[#0d141b] dark:text-white'
+                                            : 'text-[#4c739a] dark:text-gray-300 hover:bg-white/50 dark:hover:bg-slate-600/50'
                                             }`}
                                     >
                                         <span className="material-symbols-outlined text-lg mr-2">upload</span>
@@ -119,14 +119,14 @@ export default function Dashboard() {
                                         type="url"
                                         value={videoUrl}
                                         onChange={(e) => setVideoUrl(e.target.value)}
-                                        className="w-full rounded-xl text-[#0d141b] focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-[#cfdbe7] bg-white focus:border-primary h-14 placeholder:text-[#4c739a] px-4 text-base"
+                                        className="w-full rounded-xl text-[#0d141b] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-[#cfdbe7] dark:border-slate-600 bg-white dark:bg-slate-700 focus:border-primary h-14 placeholder:text-[#4c739a] dark:placeholder:text-gray-400 px-4 text-base"
                                         placeholder="Paste YouTube or video link..."
                                     />
                                     <input
                                         type="text"
                                         value={videoTitle}
                                         onChange={(e) => setVideoTitle(e.target.value)}
-                                        className="w-full rounded-xl text-[#0d141b] focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-[#cfdbe7] bg-white focus:border-primary h-12 placeholder:text-[#4c739a] px-4 text-sm"
+                                        className="w-full rounded-xl text-[#0d141b] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-[#cfdbe7] dark:border-slate-600 bg-white dark:bg-slate-700 focus:border-primary h-12 placeholder:text-[#4c739a] dark:placeholder:text-gray-400 px-4 text-sm"
                                         placeholder="Title (optional)"
                                     />
                                 </div>
@@ -135,7 +135,7 @@ export default function Dashboard() {
                                     {/* File Drop Zone */}
                                     <div
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="border-2 border-dashed border-[#cfdbe7] rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                                        className="border-2 border-dashed border-[#cfdbe7] dark:border-slate-600 rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
                                     >
                                         <input
                                             ref={fileInputRef}
@@ -146,10 +146,10 @@ export default function Dashboard() {
                                         />
                                         <span className="material-symbols-outlined text-4xl text-gray-400 mb-2">cloud_upload</span>
                                         {selectedFile ? (
-                                            <p className="text-sm text-[#0d141b] font-medium">{selectedFile.name}</p>
+                                            <p className="text-sm text-[#0d141b] dark:text-white font-medium">{selectedFile.name}</p>
                                         ) : (
                                             <>
-                                                <p className="text-sm text-[#4c739a]">Click to upload or drag & drop</p>
+                                                <p className="text-sm text-[#4c739a] dark:text-gray-400">Click to upload or drag & drop</p>
                                                 <p className="text-xs text-gray-400 mt-1">MP4, WebM, MOV (max 500MB)</p>
                                             </>
                                         )}
@@ -158,7 +158,7 @@ export default function Dashboard() {
                                         type="text"
                                         value={videoTitle}
                                         onChange={(e) => setVideoTitle(e.target.value)}
-                                        className="w-full rounded-xl text-[#0d141b] focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-[#cfdbe7] bg-white focus:border-primary h-12 placeholder:text-[#4c739a] px-4 text-sm"
+                                        className="w-full rounded-xl text-[#0d141b] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-[#cfdbe7] dark:border-slate-600 bg-white dark:bg-slate-700 focus:border-primary h-12 placeholder:text-[#4c739a] dark:placeholder:text-gray-400 px-4 text-sm"
                                         placeholder="Title (optional)"
                                     />
                                 </div>
@@ -201,7 +201,7 @@ export default function Dashboard() {
                         className="lg:col-span-2"
                     >
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-[#0d141b] text-xl lg:text-2xl font-bold leading-tight tracking-tight">
+                            <h2 className="text-[#0d141b] dark:text-white text-xl lg:text-2xl font-bold leading-tight tracking-tight">
                                 Recent Analyses
                             </h2>
                             <Link to="/library" className="text-primary text-sm font-semibold hover:underline">

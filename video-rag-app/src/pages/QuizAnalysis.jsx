@@ -25,7 +25,7 @@ export default function QuizAnalysis() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-background-light">
+            <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
                 <Header title="Quiz Analysis" showBack onBack={() => navigate(-1)} />
                 <PageLoader text="Loading results..." />
             </div>
@@ -34,7 +34,7 @@ export default function QuizAnalysis() {
 
     if (error || !results) {
         return (
-            <div className="min-h-screen bg-background-light">
+            <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
                 <Header title="Quiz Analysis" showBack onBack={() => navigate(-1)} />
                 <ErrorMessage
                     message={error || "No quiz results found"}
@@ -59,32 +59,32 @@ export default function QuizAnalysis() {
     }
 
     return (
-        <div className="min-h-screen bg-background-light">
+        <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
             {/* Top Navigation */}
-            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
+            <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700">
                 <div className="max-w-6xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate('/library')}
-                            className="flex items-center justify-center size-10 rounded-full hover:bg-slate-200 transition-colors"
+                            className="flex items-center justify-center size-10 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                         >
-                            <span className="material-symbols-outlined">arrow_back</span>
+                            <span className="material-symbols-outlined dark:text-white">arrow_back</span>
                         </button>
-                        <h1 className="text-lg lg:text-xl font-bold leading-tight tracking-tight">Quiz Analysis</h1>
+                        <h1 className="text-lg lg:text-xl font-bold leading-tight tracking-tight dark:text-white">Quiz Analysis</h1>
                     </div>
 
                     <nav className="hidden md:flex items-center gap-8">
-                        <Link to="/dashboard" className="text-gray-500 hover:text-primary transition-colors font-medium">Home</Link>
-                        <Link to="/library" className="text-gray-500 hover:text-primary transition-colors font-medium">Library</Link>
+                        <Link to="/dashboard" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors font-medium">Home</Link>
+                        <Link to="/library" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors font-medium">Library</Link>
                     </nav>
 
                     <div className="flex items-center gap-2">
-                        <button className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">
-                            <span className="material-symbols-outlined text-gray-600">download</span>
-                            <span className="hidden lg:inline text-sm font-medium">Export</span>
+                        <button className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                            <span className="material-symbols-outlined text-gray-600 dark:text-gray-300">download</span>
+                            <span className="hidden lg:inline text-sm font-medium dark:text-white">Export</span>
                         </button>
-                        <button className="flex items-center justify-center size-10 rounded-full hover:bg-slate-200 transition-colors">
-                            <span className="material-symbols-outlined">share</span>
+                        <button className="flex items-center justify-center size-10 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                            <span className="material-symbols-outlined dark:text-white">share</span>
                         </button>
                     </div>
                 </div>
@@ -96,10 +96,10 @@ export default function QuizAnalysis() {
                     <div className="lg:col-span-2 space-y-8">
                         {/* Performance Summary Card */}
                         <section>
-                            <h2 className="text-[#0d141b] tracking-tight text-2xl lg:text-3xl font-bold leading-tight mb-6">
+                            <h2 className="text-[#0d141b] dark:text-white tracking-tight text-2xl lg:text-3xl font-bold leading-tight mb-6">
                                 Performance Summary
                             </h2>
-                            <div className="bg-white rounded-2xl p-6 lg:p-8 shadow-sm border border-slate-200">
+                            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 lg:p-8 shadow-sm border border-slate-200 dark:border-slate-700">
                                 <div className="flex flex-col lg:flex-row items-center gap-8">
                                     {/* Circular Score */}
                                     <div className="flex justify-center">

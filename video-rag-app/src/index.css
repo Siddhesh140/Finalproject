@@ -1,10 +1,12 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary: #137fec;
   --color-primary-dark: #0f62c9;
   --color-background-light: #f6f7f8;
-  --color-background-dark: #101922;
+  --color-background-dark: #0f172a;
   --font-display: "Outfit", sans-serif;
 
   --shadow-glow: 0 0 20px rgba(19, 127, 236, 0.15);
@@ -19,12 +21,22 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.5);
 }
 
+.dark .glass {
+  background: rgba(30, 41, 59, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .glass-card {
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: var(--shadow-soft);
+}
+
+.dark .glass-card {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Animations */
@@ -60,6 +72,13 @@ body {
   color: #1e293b;
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark body,
+html.dark body {
+  background-color: var(--color-background-dark);
+  color: #e2e8f0;
 }
 
 /* Custom Scrollbar */
@@ -79,4 +98,12 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }

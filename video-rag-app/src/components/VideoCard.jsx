@@ -2,18 +2,29 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { useVideos } from '../context'
+import ConfirmModal from './ConfirmModal'
 
 export default function VideoCard({ video, variant = 'grid' }) {
     const { deleteVideo } = useVideos()
     const [showMenu, setShowMenu] = useState(false)
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
 
-    const handleDelete = async (e) => {
+    const handleDeleteClick = (e) => {
         e.preventDefault()
         e.stopPropagation()
-        if (window.confirm('Are you sure you want to delete this video?')) {
-            await deleteVideo(video.id)
-        }
+        setShowDeleteModal(true)
         setShowMenu(false)
+    }
+
+    const handleConfirmDelete = async () => {
+        setIsDeleting(true)
+        try {
+            await deleteVideo(video.id)
+        } catch (error) {
+            console.error('Failed to delete video:', error)
+            setIsDeleting(false)
+        }
     }
 
     const formatDuration = (seconds) => {
@@ -37,10 +48,10 @@ export default function VideoCard({ video, variant = 'grid' }) {
         return (
             <Link
                 to={`/player/${video.id}`}
-                className="flex gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all"
+                className="flex gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all"
             >
                 {/* Thumbnail */}
-                <div className="w-32 h-20 lg:w-40 lg:h-24 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0 relative">
+                <div className="w-32 h-20 lg:w-40 lg:h-24 rounded-lg bg-gray-200 dark:bg-slate-700 overflow-hidden flex-shrink-0 relative">
                     {video.thumbnail_url ? (
                         <img
                             src={video.thumbnail_url}
@@ -60,9 +71,9 @@ export default function VideoCard({ video, variant = 'grid' }) {
                 </div>
 
                 {/* Info */}
-                <div className="flex-1 flex flex-col justify-center gap-1">
-                    <h3 className="font-semibold text-[#0d141b] line-clamp-2">{video.title}</h3>
-                    <p className="text-sm text-gray-500">
+                <div className="flex-1 flex flex-col justify-center gap-1 min-w-0 overflow-hidden">
+                    <h3 className="font-semibold text-[#0d141b] dark:text-white truncate">{video.title}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                         {video.source_type === 'youtube' ? 'YouTube' : 'Upload'}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
@@ -87,10 +98,10 @@ export default function VideoCard({ video, variant = 'grid' }) {
     return (
         <Link
             to={`/player/${video.id}`}
-            className="flex flex-col gap-3 bg-white rounded-xl p-3 border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
+            className="group relative flex flex-col gap-3 bg-white dark:bg-slate-800 rounded-xl p-3 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
         >
             {/* Thumbnail */}
-            <div className="w-full aspect-video rounded-lg bg-gray-200 overflow-hidden relative group-hover:shadow-glow transition-all duration-300">
+            <div className="w-full aspect-video rounded-lg bg-gray-200 dark:bg-slate-700 overflow-hidden relative group-hover:shadow-glow transition-all duration-300">
                 {video.thumbnail_url ? (
                     <img
                         src={video.thumbnail_url}
@@ -126,7 +137,7 @@ export default function VideoCard({ video, variant = 'grid' }) {
             </div>
 
             {/* Three Dots Menu - Grid */}
-            <div className="relative absolute top-3 right-3 z-10">
+            <div className="absolute top-3 right-3 z-10">
                 <button
                     onClick={(e) => {
                         e.preventDefault()
@@ -145,11 +156,11 @@ export default function VideoCard({ video, variant = 'grid' }) {
                     <div
                         role="menu"
                         aria-label="Video actions"
-                        className="absolute right-0 top-full mt-2 w-32 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden z-20 animate-fade-in"
+                        className="absolute right-0 top-full mt-2 w-32 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden z-20 animate-fade-in"
                     >
                         <button
                             role="menuitem"
-                            onClick={handleDelete}
+                            onClick={handleDeleteClick}
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left focus:outline-none focus:bg-red-50"
                         >
                             <span className="material-symbols-outlined text-lg" aria-hidden="true">delete</span>
@@ -161,9 +172,9 @@ export default function VideoCard({ video, variant = 'grid' }) {
 
             {/* Info */}
             <div className="flex flex-col gap-1 px-1">
-                <h3 className="font-semibold text-[#0d141b] line-clamp-2 text-sm group-hover:text-primary transition-colors">{video.title}</h3>
+                <h3 className="font-semibold text-[#0d141b] dark:text-white line-clamp-2 text-sm group-hover:text-primary transition-colors">{video.title}</h3>
                 <div className="flex items-center justify-between">
-                    <p className="text-xs text-slate-500 font-medium tracking-wide">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide">
                         {video.source_type === 'youtube' ? 'YouTube' : 'Uploaded'}
                     </p>
                     {video.status === 'processing' && (
@@ -179,6 +190,17 @@ export default function VideoCard({ video, variant = 'grid' }) {
                     )}
                 </div>
             </div>
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showDeleteModal}
+                onClose={() => !isDeleting && setShowDeleteModal(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Video"
+                message={`Are you sure you want to delete "${video.title}"? This action cannot be undone.`}
+                confirmText="Delete Video"
+                isDanger={true}
+                isLoading={isDeleting}
+            />
         </Link>
     )
 }

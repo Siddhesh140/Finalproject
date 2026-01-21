@@ -1,8 +1,10 @@
 import { Link, useLocation } from 'react-router-dom'
 import PropTypes from 'prop-types'
+import { useTheme } from '../context'
 
 export default function Header({ title, icon, showBack = false, onBack }) {
     const location = useLocation()
+    const { isDarkMode, toggleDarkMode } = useTheme()
 
     const navItems = [
         { path: '/dashboard', label: 'Home' },
@@ -20,9 +22,9 @@ export default function Header({ title, icon, showBack = false, onBack }) {
                         <button
                             onClick={onBack}
                             aria-label="Go back"
-                            className="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            className="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
                         >
-                            <span className="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+                            <span className="material-symbols-outlined dark:text-white" aria-hidden="true">arrow_back</span>
                         </button>
                     )}
 
@@ -35,7 +37,7 @@ export default function Header({ title, icon, showBack = false, onBack }) {
                     )}
 
                     {title && (
-                        <h1 className="text-[#0d141b] text-xl lg:text-2xl font-bold tracking-tight">
+                        <h1 className="text-[#0d141b] dark:text-white text-xl lg:text-2xl font-bold tracking-tight">
                             {title}
                         </h1>
                     )}
@@ -49,7 +51,7 @@ export default function Header({ title, icon, showBack = false, onBack }) {
                             to={item.path}
                             className={`font-medium transition-colors ${isActive(item.path)
                                 ? 'text-primary font-semibold'
-                                : 'text-gray-500 hover:text-primary'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-primary'
                                 }`}
                         >
                             {item.label}
@@ -57,13 +59,33 @@ export default function Header({ title, icon, showBack = false, onBack }) {
                     ))}
                 </nav>
 
-                <div className="flex items-center gap-3">
-                    <button className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">
-                        <span className="material-symbols-outlined text-gray-600">notifications</span>
+                <div className="flex items-center gap-2">
+                    {/* Dark Mode Toggle */}
+                    <button
+                        onClick={toggleDarkMode}
+                        aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+                        className="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        <span className="material-symbols-outlined text-gray-600 dark:text-gray-300">
+                            {isDarkMode ? 'light_mode' : 'dark_mode'}
+                        </span>
                     </button>
-                    <div className="size-10 rounded-full bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center text-white font-bold">
-                        U
+
+
+
+                    {/* App Logo */}
+                    <div className="hidden md:flex items-center justify-center size-10 rounded-xl bg-primary/10 dark:bg-primary/20">
+                        <span className="material-symbols-outlined text-primary text-xl">smart_display</span>
                     </div>
+
+                    {/* Profile */}
+                    <Link
+                        to="/profile"
+                        className="size-10 rounded-full bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center text-white font-bold hover:scale-105 hover:shadow-lg transition-all"
+                        aria-label="Go to profile"
+                    >
+                        U
+                    </Link>
                 </div>
             </div>
         </header>
@@ -80,4 +102,5 @@ Header.propTypes = {
     showBack: PropTypes.bool,
     onBack: PropTypes.func,
 }
+
 

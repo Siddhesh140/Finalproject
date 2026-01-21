@@ -31,20 +31,10 @@ export default function Library() {
         return true
     })
 
-    const handleDelete = async (e, videoId) => {
-        e.preventDefault()
-        e.stopPropagation()
-        if (window.confirm('Are you sure you want to delete this video?')) {
-            try {
-                await deleteVideo(videoId)
-            } catch (err) {
-                console.error('Failed to delete:', err)
-            }
-        }
-    }
+
 
     return (
-        <div className="min-h-screen bg-background-light">
+        <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
             <Header
                 title="Library"
                 icon={{ name: 'video_library', bg: 'bg-primary/10', color: 'text-primary' }}
@@ -56,15 +46,15 @@ export default function Library() {
                     {/* SearchBar */}
                     <div className="py-4">
                         <label className="flex flex-col max-w-2xl h-12 w-full">
-                            <div className="flex w-full flex-1 items-stretch rounded-xl h-full overflow-hidden shadow-sm border border-slate-200">
-                                <div className="text-[#4c739a] flex bg-[#f0f4f8] items-center justify-center pl-4">
+                            <div className="flex w-full flex-1 items-stretch rounded-xl h-full overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700">
+                                <div className="text-[#4c739a] dark:text-gray-400 flex bg-[#f0f4f8] dark:bg-slate-800 items-center justify-center pl-4">
                                     <span className="material-symbols-outlined text-xl">search</span>
                                 </div>
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="flex w-full min-w-0 flex-1 border-none bg-[#f0f4f8] text-[#0d141b] focus:ring-0 focus:outline-none h-full placeholder:text-[#4c739a] px-4 pl-2 text-base font-normal leading-normal"
+                                    className="flex w-full min-w-0 flex-1 border-none bg-[#f0f4f8] dark:bg-slate-800 text-[#0d141b] dark:text-white focus:ring-0 focus:outline-none h-full placeholder:text-[#4c739a] dark:placeholder:text-gray-400 px-4 pl-2 text-base font-normal leading-normal"
                                     placeholder="Search your videos..."
                                 />
                                 {searchQuery && (
@@ -85,7 +75,7 @@ export default function Library() {
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${activeTab === tab ? 'text-white shadow-lg shadow-primary/30' : 'text-gray-500 hover:bg-white/50'
+                                className={`relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${activeTab === tab ? 'text-white shadow-lg shadow-primary/30' : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-slate-700'
                                     }`}
                             >
                                 {activeTab === tab && (

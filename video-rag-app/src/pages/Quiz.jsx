@@ -74,7 +74,7 @@ export default function Quiz() {
 
     if (generating || loading) {
         return (
-            <div className="min-h-screen bg-background-light">
+            <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
                 <Header title="Quiz" showBack onBack={() => navigate(-1)} />
                 <PageLoader text="Generating quiz questions..." />
             </div>
@@ -83,7 +83,7 @@ export default function Quiz() {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-background-light">
+            <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
                 <Header title="Quiz" showBack onBack={() => navigate(-1)} />
                 <ErrorMessage message={error} onRetry={() => generateQuiz(videoId, 10)} />
             </div>
@@ -92,11 +92,11 @@ export default function Quiz() {
 
     if (!quiz || !currentQuestion) {
         return (
-            <div className="min-h-screen bg-background-light">
+            <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
                 <Header title="Quiz" showBack onBack={() => navigate(-1)} />
                 <div className="max-w-2xl mx-auto px-4 py-12 text-center">
                     <span className="material-symbols-outlined text-6xl text-gray-300 mb-4 block">quiz</span>
-                    <h2 className="text-xl font-bold text-gray-700 mb-2">No Quiz Available</h2>
+                    <h2 className="text-xl font-bold text-gray-700 dark:text-gray-200 mb-2">No Quiz Available</h2>
                     <p className="text-gray-500 mb-6">Select a video to generate a quiz</p>
                     <Link
                         to="/library"
@@ -111,29 +111,29 @@ export default function Quiz() {
     }
 
     return (
-        <div className="min-h-screen bg-background-light">
+        <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
             {/* Top Navigation */}
-            <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-200">
+            <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700">
                 <div className="max-w-5xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate(-1)}
-                            className="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 transition-colors"
+                            className="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                         >
-                            <span className="material-symbols-outlined">arrow_back</span>
+                            <span className="material-symbols-outlined dark:text-white">arrow_back</span>
                         </button>
-                        <h1 className="text-[#0d141b] text-xl lg:text-2xl font-bold tracking-[-0.015em]">
+                        <h1 className="text-[#0d141b] dark:text-white text-xl lg:text-2xl font-bold tracking-[-0.015em]">
                             Video Quiz
                         </h1>
                     </div>
 
                     <nav className="hidden md:flex items-center gap-8">
-                        <Link to="/dashboard" className="text-gray-500 hover:text-primary transition-colors font-medium">Home</Link>
-                        <Link to="/library" className="text-gray-500 hover:text-primary transition-colors font-medium">Library</Link>
+                        <Link to="/dashboard" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors font-medium">Home</Link>
+                        <Link to="/library" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors font-medium">Library</Link>
                     </nav>
 
-                    <button className="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 transition-colors">
-                        <span className="material-symbols-outlined">more_vert</span>
+                    <button className="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                        <span className="material-symbols-outlined dark:text-white">more_vert</span>
                     </button>
                 </div>
             </header>
@@ -146,12 +146,12 @@ export default function Quiz() {
                         {/* Progress Bar */}
                         <div className="flex flex-col gap-3 mb-8">
                             <div className="flex gap-6 justify-between items-end">
-                                <p className="text-lg font-semibold">
+                                <p className="text-lg font-semibold dark:text-white">
                                     Question {currentQuestionIndex + 1} of {totalQuestions}
                                 </p>
-                                <p className="text-sm text-gray-500">{answeredCount} answered</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{answeredCount} answered</p>
                             </div>
-                            <div className="rounded-full bg-[#cfdbe7] h-3 overflow-hidden">
+                            <div className="rounded-full bg-[#cfdbe7] dark:bg-slate-700 h-3 overflow-hidden">
                                 <div
                                     className="h-3 rounded-full bg-primary transition-all duration-300"
                                     style={{ width: `${progress}%` }}
@@ -168,10 +168,10 @@ export default function Quiz() {
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -20 }}
                                     transition={{ duration: 0.3 }}
-                                    className="bg-white rounded-2xl p-6 lg:p-8 shadow-sm border border-gray-100 mb-6"
+                                    className="bg-white dark:bg-slate-800 rounded-2xl p-6 lg:p-8 shadow-sm border border-gray-100 dark:border-slate-700 mb-6"
                                 >
                                     {/* Question */}
-                                    <h2 className="text-xl lg:text-2xl font-semibold text-[#0d141b] mb-6">
+                                    <h2 className="text-xl lg:text-2xl font-semibold text-[#0d141b] dark:text-white mb-6">
                                         {currentQuestion.question}
                                     </h2>
 

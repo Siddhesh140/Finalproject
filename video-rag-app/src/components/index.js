@@ -6,4 +6,5 @@ export { default as ErrorBoundary } from './ErrorBoundary'
 export { default as BottomNavDashboard } from './BottomNavDashboard'
 export { default as BottomNavLibrary } from './BottomNavLibrary'
 export { default as BottomNavSearch } from './BottomNavSearch'
+export { default as ConfirmModal } from './ConfirmModal'
 

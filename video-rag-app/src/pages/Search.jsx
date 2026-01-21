@@ -96,7 +96,7 @@ export default function Search() {
     }
 
     return (
-        <div className="min-h-screen bg-background-light">
+        <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
             <Header
                 title="Search"
                 icon={{ name: 'search', bg: 'bg-primary/10', color: 'text-primary' }}
@@ -107,15 +107,15 @@ export default function Search() {
                 <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4 lg:py-6">
                     <div className="flex items-center gap-4 max-w-3xl">
                         <label className="flex flex-col h-12 lg:h-14 w-full">
-                            <div className="flex w-full flex-1 items-stretch rounded-xl h-full border border-gray-200 shadow-sm overflow-hidden">
-                                <div className="text-[#4c739a] flex bg-[#e7edf3] items-center justify-center pl-4 lg:pl-5">
+                            <div className="flex w-full flex-1 items-stretch rounded-xl h-full border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                                <div className="text-[#4c739a] dark:text-gray-400 flex bg-[#e7edf3] dark:bg-slate-800 items-center justify-center pl-4 lg:pl-5">
                                     <span className="material-symbols-outlined text-xl">search</span>
                                 </div>
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-xl text-[#0d141b] focus:outline-0 focus:ring-2 focus:ring-primary border-none bg-[#e7edf3] h-full placeholder:text-[#4c739a] px-4 pl-3 text-base font-normal leading-normal"
+                                    className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-xl text-[#0d141b] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border-none bg-[#e7edf3] dark:bg-slate-800 h-full placeholder:text-[#4c739a] dark:placeholder:text-gray-400 px-4 pl-3 text-base font-normal leading-normal"
                                     placeholder="Search videos, transcripts, notes..."
                                 />
                                 {searchQuery && (
@@ -145,7 +145,7 @@ export default function Search() {
                                 onClick={() => setActiveFilter(filter)}
                                 className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === filter
                                     ? 'bg-primary text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
                                     }`}
                             >
                                 {filter}
@@ -172,7 +172,7 @@ export default function Search() {
                             />
                         ) : results.length > 0 ? (
                             <div className="space-y-4">
-                                <p className="text-sm text-gray-500 mb-4">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                                     Found {results.length} result{results.length !== 1 ? 's' : ''} for "{searchQuery}"
                                 </p>
 
@@ -185,14 +185,14 @@ export default function Search() {
                                     >
                                         <Link
                                             to={`/player/${result.video_id}`}
-                                            className="flex flex-col md:flex-row gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all group"
+                                            className="flex flex-col md:flex-row gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all group"
                                         >
-                                            <div className="w-full md:w-48 lg:w-56 aspect-video bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden group-hover:shadow-glow transition-all duration-500">
+                                            <div className="w-full md:w-48 lg:w-56 aspect-video bg-gray-200 dark:bg-slate-700 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden group-hover:shadow-glow transition-all duration-500">
                                                 <span className="material-symbols-outlined text-gray-400 text-4xl group-hover:scale-110 transition-transform duration-500">smart_display</span>
                                             </div>
                                             <div className="flex flex-col justify-center gap-2 flex-1">
-                                                <h3 className="font-semibold text-[#0d141b] group-hover:text-primary transition-colors">{result.video_title}</h3>
-                                                <p className="text-sm text-gray-600 line-clamp-2">{result.text}</p>
+                                                <h3 className="font-semibold text-[#0d141b] dark:text-white group-hover:text-primary transition-colors">{result.video_title}</h3>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{result.text}</p>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     {result.timestamp_start > 0 && (
                                                         <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full font-medium">
@@ -211,7 +211,7 @@ export default function Search() {
                         ) : (
                             // No search yet - show recent videos
                             <div>
-                                <h3 className="text-lg font-semibold mb-4">Recent Videos</h3>
+                                <h3 className="text-lg font-semibold mb-4 dark:text-white">Recent Videos</h3>
                                 {videos.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {videos.slice(0, 4).map((video) => (
@@ -233,9 +233,9 @@ export default function Search() {
                     <div className="hidden lg:block space-y-6">
                         {/* Recent Searches */}
                         {recentSearches.length > 0 && (
-                            <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
+                            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-100 dark:border-slate-700 shadow-sm">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-lg font-bold">Recent Searches</h3>
+                                    <h3 className="text-lg font-bold dark:text-white">Recent Searches</h3>
                                     <button
                                         onClick={clearRecentSearches}
                                         className="text-xs text-gray-400 hover:text-gray-600"

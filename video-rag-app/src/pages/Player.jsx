@@ -124,7 +124,7 @@ export default function Player() {
 
     if (videoLoading) {
         return (
-            <div className="min-h-screen bg-background-light">
+            <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
                 <Header title="Loading..." showBack onBack={() => navigate(-1)} />
                 <PageLoader text="Loading video..." />
             </div>
@@ -133,7 +133,7 @@ export default function Player() {
 
     if (!currentVideo && videoId) {
         return (
-            <div className="min-h-screen bg-background-light">
+            <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
                 <Header title="Video Not Found" showBack onBack={() => navigate(-1)} />
                 <ErrorMessage
                     message="The video you're looking for doesn't exist or has been deleted."
@@ -144,41 +144,41 @@ export default function Player() {
     }
 
     return (
-        <div className="min-h-screen bg-background-light">
+        <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
             {/* Top Navigation */}
             <header className="sticky top-0 z-20 glass border-none">
                 <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => navigate(-1)}
-                            className="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 transition-colors"
+                            className="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                         >
-                            <span className="material-symbols-outlined">arrow_back</span>
+                            <span className="material-symbols-outlined dark:text-white">arrow_back</span>
                         </button>
-                        <h1 className="text-[#0d141b] text-lg lg:text-xl font-bold truncate max-w-[200px] lg:max-w-md">
+                        <h1 className="text-[#0d141b] dark:text-white text-lg lg:text-xl font-bold truncate max-w-[200px] lg:max-w-md">
                             {currentVideo?.title || 'Video Player'}
                         </h1>
                     </div>
 
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex items-center gap-8">
-                        <Link to="/dashboard" className="text-gray-500 hover:text-primary transition-colors font-medium hover:scale-105 transform duration-200">Home</Link>
-                        <Link to="/library" className="text-gray-500 hover:text-primary transition-colors font-medium hover:scale-105 transform duration-200">Library</Link>
-                        <Link to="/search" className="text-gray-500 hover:text-primary transition-colors font-medium hover:scale-105 transform duration-200">Search</Link>
+                        <Link to="/dashboard" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors font-medium hover:scale-105 transform duration-200">Home</Link>
+                        <Link to="/library" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors font-medium hover:scale-105 transform duration-200">Library</Link>
+                        <Link to="/search" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors font-medium hover:scale-105 transform duration-200">Search</Link>
                     </nav>
 
                     <div className="flex items-center gap-3">
-                        <button className="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 transition-colors">
-                            <span className="material-symbols-outlined text-gray-600">bookmark_border</span>
+                        <button className="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                            <span className="material-symbols-outlined text-gray-600 dark:text-gray-300">bookmark_border</span>
                         </button>
                         <button
                             onClick={() => {
                                 navigator.clipboard.writeText(window.location.href)
                                 alert('Link copied to clipboard!')
                             }}
-                            className="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 transition-colors active:scale-95"
+                            className="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors active:scale-95"
                         >
-                            <span className="material-symbols-outlined text-gray-600">share</span>
+                            <span className="material-symbols-outlined text-gray-600 dark:text-gray-300">share</span>
                         </button>
                     </div>
                 </div>
@@ -214,10 +214,10 @@ export default function Player() {
 
                         {/* Video Info */}
                         <div className="mt-4 lg:mt-6 space-y-3">
-                            <h2 className="text-xl lg:text-2xl font-bold text-[#0d141b]">
+                            <h2 className="text-xl lg:text-2xl font-bold text-[#0d141b] dark:text-white">
                                 {currentVideo?.title || 'Video Title'}
                             </h2>
-                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                                 <span className="flex items-center gap-1">
                                     <span className="material-symbols-outlined text-lg">schedule</span>
                                     {currentVideo?.duration ? formatTimestamp(currentVideo.duration) : '--:--'}
