@@ -2,6 +2,8 @@ export { default as Header } from './Header'
 export { default as VideoCard } from './VideoCard'
 export { default as LoadingSpinner, PageLoader, ButtonLoader } from './LoadingSpinner'
 export { default as ErrorMessage, EmptyState } from './ErrorMessage'
+export { default as ErrorBoundary } from './ErrorBoundary'
 export { default as BottomNavDashboard } from './BottomNavDashboard'
 export { default as BottomNavLibrary } from './BottomNavLibrary'
 export { default as BottomNavSearch } from './BottomNavSearch'
+

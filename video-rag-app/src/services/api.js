@@ -1,7 +1,29 @@
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
-// Helper function for API calls
+// Store for active abort controllers
+const activeRequests = new Map()
+
+// Helper to create a cancellable request
+export function createCancellableRequest(key) {
+    // Cancel any existing request with the same key
+    if (activeRequests.has(key)) {
+        activeRequests.get(key).abort()
+    }
+    const controller = new AbortController()
+    activeRequests.set(key, controller)
+    return controller
+}
+
+// Helper to cancel a request by key
+export function cancelRequest(key) {
+    if (activeRequests.has(key)) {
+        activeRequests.get(key).abort()
+        activeRequests.delete(key)
+    }
+}
+
+// Helper function for API calls with optional AbortSignal
 async function apiCall(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`
 
@@ -28,6 +50,10 @@ async function apiCall(endpoint, options = {}) {
 
         return await response.json()
     } catch (error) {
+        // Don't log abort errors as they're intentional
+        if (error.name === 'AbortError') {
+            throw error
+        }
         console.error(`API Error [${endpoint}]:`, error)
         throw error
     }
@@ -49,6 +75,9 @@ export const videoAPI = {
         method: 'POST',
         body: JSON.stringify({ url, title }),
     }),
+
+    // Toggle like
+    toggleLike: (id) => apiCall(`/videos/${id}/like`, { method: 'POST' }),
 
     // Upload video file
     upload: (file, title, onProgress) => {
@@ -73,6 +102,15 @@ export const videoAPI = {
 
     // Get video notes
     getNotes: (id) => apiCall(`/videos/${id}/notes`),
+
+    // Create a note
+    createNote: (videoId, content, timestamp) => apiCall(`/videos/${videoId}/notes`, {
+        method: 'POST',
+        body: JSON.stringify({ content, timestamp }),
+    }),
+
+    // Delete a note
+    deleteNote: (videoId, noteId) => apiCall(`/videos/${videoId}/notes/${noteId}`, { method: 'DELETE' }),
 }
 
 // ============================================

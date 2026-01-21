@@ -144,6 +144,17 @@ def get_video_transcript(video_id: str, db: Session = Depends(get_db)):
     return {"video_id": video.id, "transcript": video.transcript}
 
 
+@router.post("/{video_id}/like")
+def toggle_like(video_id: str, db: Session = Depends(get_db)):
+    """Toggle like status of a video"""
+    video = db.query(Video).filter(Video.id == video_id).first()
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    
+    video.is_liked = not video.is_liked
+    db.commit()
+    
+    return {"video_id": video.id, "is_liked": video.is_liked}
 @router.delete("/{video_id}")
 def delete_video(video_id: str, db: Session = Depends(get_db)):
     """Delete a video"""

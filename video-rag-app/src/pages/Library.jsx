@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useVideos } from '../context'
 import { Header, VideoCard, BottomNavLibrary, PageLoader, ErrorMessage, EmptyState } from '../components'
 
@@ -50,7 +51,7 @@ export default function Library() {
             />
 
             {/* Sub-header with Search and Tabs */}
-            <div className="bg-white border-b border-gray-100">
+            <div className="glass border-none sticky top-[72px] z-10 transition-all">
                 <div className="max-w-7xl mx-auto px-4 lg:px-8">
                     {/* SearchBar */}
                     <div className="py-4">
@@ -79,26 +80,33 @@ export default function Library() {
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex border-b border-[#cfdbe7] gap-6 lg:gap-8 overflow-x-auto">
+                    <div className="flex gap-2 lg:gap-4 overflow-x-auto pb-4 pt-2 no-scrollbar">
                         {tabs.map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`flex flex-col items-center justify-center border-b-[3px] pb-3 pt-2 whitespace-nowrap transition-colors ${activeTab === tab
-                                        ? 'border-primary text-primary'
-                                        : 'border-transparent text-[#4c739a] hover:text-primary/70'
+                                className={`relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${activeTab === tab ? 'text-white shadow-lg shadow-primary/30' : 'text-gray-500 hover:bg-white/50'
                                     }`}
                             >
-                                <p className="text-sm font-bold leading-normal tracking-wide">{tab}</p>
-                                {tab !== 'All' && (
-                                    <span className="text-xs text-gray-400">
-                                        ({videos.filter(v =>
-                                            tab === 'Processed' ? v.status === 'completed' :
-                                                tab === 'Processing' ? ['pending', 'processing'].includes(v.status) :
-                                                    tab === 'Failed' ? v.status === 'failed' : true
-                                        ).length})
-                                    </span>
+                                {activeTab === tab && (
+                                    <motion.div
+                                        layoutId="activeLibraryTab"
+                                        className="absolute inset-0 bg-primary rounded-full z-0"
+                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                    />
                                 )}
+                                <span className="relative z-10 flex items-center gap-2">
+                                    {tab}
+                                    {tab !== 'All' && (
+                                        <span className={`text-xs ${activeTab === tab ? 'text-white/80' : 'text-gray-400'}`}>
+                                            {videos.filter(v =>
+                                                tab === 'Processed' ? v.status === 'completed' :
+                                                    tab === 'Processing' ? ['pending', 'processing'].includes(v.status) :
+                                                        tab === 'Failed' ? v.status === 'failed' : true
+                                            ).length}
+                                        </span>
+                                    )}
+                                </span>
                             </button>
                         ))}
                     </div>
@@ -128,9 +136,20 @@ export default function Library() {
                     />
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
-                        {filteredVideos.map((video) => (
-                            <VideoCard key={video.id} video={video} />
-                        ))}
+                        <AnimatePresence>
+                            {filteredVideos.map((video) => (
+                                <motion.div
+                                    key={video.id}
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <VideoCard video={video} />
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
                     </div>
                 )}
             </main>

@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useCallback } from 'react'
+import { createContext, useContext, useReducer, useCallback, useEffect } from 'react'
 import { videoAPI } from '../services/api'
 
 // Initial state
@@ -147,6 +147,19 @@ export function VideoProvider({ children }) {
             console.error('Error checking status:', error)
         }
     }, [])
+
+    // Poll for status updates
+    useEffect(() => {
+        if (state.processingVideos.length === 0) return
+
+        const interval = setInterval(() => {
+            state.processingVideos.forEach(id => {
+                checkProcessingStatus(id)
+            })
+        }, 2000)
+
+        return () => clearInterval(interval)
+    }, [state.processingVideos, checkProcessingStatus])
 
     const value = {
         ...state,

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useQuiz, useVideos } from '../context'
 import { Header, PageLoader, ErrorMessage } from '../components'
 
@@ -103,34 +104,54 @@ export default function QuizAnalysis() {
                                     {/* Circular Score */}
                                     <div className="flex justify-center">
                                         <div className="relative">
-                                            <div className={`w-36 h-36 lg:w-44 lg:h-44 rounded-full bg-gradient-to-br ${getScoreBg()} p-2`}>
+                                            <motion.div
+                                                initial={{ scale: 0, rotate: -180 }}
+                                                animate={{ scale: 1, rotate: 0 }}
+                                                transition={{ type: "spring", duration: 1.5, bounce: 0.5 }}
+                                                className={`w-36 h-36 lg:w-44 lg:h-44 rounded-full bg-gradient-to-br ${getScoreBg()} p-2`}
+                                            >
                                                 <div className="w-full h-full rounded-full bg-white flex flex-col items-center justify-center">
                                                     <span className={`text-4xl lg:text-5xl font-bold ${getScoreColor()}`}>
                                                         {percentage}%
                                                     </span>
                                                     <span className="text-gray-500 text-sm">{score}/{total}</span>
                                                 </div>
-                                            </div>
+                                            </motion.div>
                                         </div>
                                     </div>
 
                                     {/* Stats Grid */}
                                     <div className="flex-1 grid grid-cols-3 gap-4 w-full">
-                                        <div className="flex flex-col items-center gap-2 p-4 lg:p-6 rounded-xl bg-green-50 border border-green-100">
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.2 }}
+                                            className="flex flex-col items-center gap-2 p-4 lg:p-6 rounded-xl bg-green-50 border border-green-100"
+                                        >
                                             <span className="material-symbols-outlined text-green-600 text-2xl">check_circle</span>
                                             <span className="text-xs font-medium text-slate-500">Correct</span>
                                             <span className="text-2xl font-bold text-green-600">{score}</span>
-                                        </div>
-                                        <div className="flex flex-col items-center gap-2 p-4 lg:p-6 rounded-xl bg-red-50 border border-red-100">
+                                        </motion.div>
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.3 }}
+                                            className="flex flex-col items-center gap-2 p-4 lg:p-6 rounded-xl bg-red-50 border border-red-100"
+                                        >
                                             <span className="material-symbols-outlined text-red-500 text-2xl">cancel</span>
                                             <span className="text-xs font-medium text-slate-500">Incorrect</span>
                                             <span className="text-2xl font-bold text-red-500">{total - score}</span>
-                                        </div>
-                                        <div className="flex flex-col items-center gap-2 p-4 lg:p-6 rounded-xl bg-blue-50 border border-blue-100">
+                                        </motion.div>
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.4 }}
+                                            className="flex flex-col items-center gap-2 p-4 lg:p-6 rounded-xl bg-blue-50 border border-blue-100"
+                                        >
                                             <span className="material-symbols-outlined text-blue-500 text-2xl">help</span>
                                             <span className="text-xs font-medium text-slate-500">Total</span>
                                             <span className="text-2xl font-bold text-blue-500">{total}</span>
-                                        </div>
+                                        </motion.div>
                                     </div>
                                 </div>
                             </div>

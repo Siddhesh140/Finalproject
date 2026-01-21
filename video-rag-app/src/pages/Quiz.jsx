@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useQuiz, useVideos } from '../context'
 import { Header, PageLoader, ErrorMessage } from '../components'
 
@@ -159,37 +160,51 @@ export default function Quiz() {
                         </div>
 
                         {/* Question Card */}
-                        <div className="bg-white rounded-2xl p-6 lg:p-8 shadow-sm border border-gray-100 mb-6">
-                            {/* Question */}
-                            <h2 className="text-xl lg:text-2xl font-semibold text-[#0d141b] mb-6">
-                                {currentQuestion.question}
-                            </h2>
+                        <div className="relative min-h-[400px]">
+                            <AnimatePresence mode='wait'>
+                                <motion.div
+                                    key={currentQuestion.id}
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    transition={{ duration: 0.3 }}
+                                    className="bg-white rounded-2xl p-6 lg:p-8 shadow-sm border border-gray-100 mb-6"
+                                >
+                                    {/* Question */}
+                                    <h2 className="text-xl lg:text-2xl font-semibold text-[#0d141b] mb-6">
+                                        {currentQuestion.question}
+                                    </h2>
 
-                            {/* Answer Options */}
-                            <div className="flex flex-col gap-4">
-                                {currentQuestion.options.map((option) => (
-                                    <button
-                                        key={option.id}
-                                        onClick={() => handleAnswerSelect(option.id)}
-                                        className={`flex items-center gap-4 rounded-xl border-2 p-4 lg:p-5 transition-all text-left ${currentAnswer === option.id
-                                                ? 'border-primary bg-primary/5'
-                                                : 'border-[#cfdbe7] bg-white hover:border-primary/50 hover:bg-primary/5'
-                                            }`}
-                                    >
-                                        <div
-                                            className={`h-6 w-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${currentAnswer === option.id
-                                                    ? 'border-primary bg-primary'
-                                                    : 'border-[#cfdbe7]'
-                                                }`}
-                                        >
-                                            {currentAnswer === option.id && (
-                                                <span className="material-symbols-outlined text-white text-sm">check</span>
-                                            )}
-                                        </div>
-                                        <span className="text-[#0d141b]">{option.text}</span>
-                                    </button>
-                                ))}
-                            </div>
+                                    {/* Answer Options */}
+                                    <div className="flex flex-col gap-4">
+                                        {currentQuestion.options.map((option, index) => (
+                                            <motion.button
+                                                key={option.id}
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: index * 0.1 }}
+                                                onClick={() => handleAnswerSelect(option.id)}
+                                                className={`flex items-center gap-4 rounded-xl border-2 p-4 lg:p-5 transition-all text-left group ${currentAnswer === option.id
+                                                    ? 'border-primary bg-primary/5'
+                                                    : 'border-[#cfdbe7] bg-white hover:border-primary/50 hover:bg-primary/5'
+                                                    }`}
+                                            >
+                                                <div
+                                                    className={`h-6 w-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${currentAnswer === option.id
+                                                        ? 'border-primary bg-primary'
+                                                        : 'border-[#cfdbe7] group-hover:border-primary/50'
+                                                        }`}
+                                                >
+                                                    {currentAnswer === option.id && (
+                                                        <span className="material-symbols-outlined text-white text-sm">check</span>
+                                                    )}
+                                                </div>
+                                                <span className="text-[#0d141b]">{option.text}</span>
+                                            </motion.button>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            </AnimatePresence>
                         </div>
 
                         {/* Navigation Buttons - Desktop */}
@@ -242,10 +257,10 @@ export default function Quiz() {
                                             key={index}
                                             onClick={() => goToQuestion(index)}
                                             className={`size-12 shrink-0 rounded-xl flex items-center justify-center font-medium transition-all hover:scale-105 ${isCurrent
-                                                    ? 'border-2 border-primary bg-primary/10 text-primary font-bold'
-                                                    : isAnswered
-                                                        ? 'bg-green-100 text-green-700 border border-green-200'
-                                                        : 'border border-slate-200 text-slate-400 hover:border-primary/50'
+                                                ? 'border-2 border-primary bg-primary/10 text-primary font-bold'
+                                                : isAnswered
+                                                    ? 'bg-green-100 text-green-700 border border-green-200'
+                                                    : 'border border-slate-200 text-slate-400 hover:border-primary/50'
                                                 }`}
                                         >
                                             {index + 1}

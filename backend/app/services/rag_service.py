@@ -53,8 +53,23 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> List[dict
 
 
 async def get_embeddings(texts: List[str]) -> List[List[float]]:
-    """Get embeddings for texts using OpenAI or Google"""
-    if settings.openai_api_key:
+    """Get embeddings for texts using Google or OpenAI"""
+    # Check for valid Google API key (prioritize Google)
+    if settings.google_api_key and not settings.google_api_key.startswith('your-'):
+        import google.generativeai as genai
+        genai.configure(api_key=settings.google_api_key)
+        
+        embeddings = []
+        for text in texts:
+            result = genai.embed_content(
+                model="models/text-embedding-004",
+                content=text
+            )
+            embeddings.append(result['embedding'])
+        return embeddings
+    
+    # Fallback to OpenAI if valid key exists
+    elif settings.openai_api_key and not settings.openai_api_key.startswith('your-'):
         import openai
         client = openai.OpenAI(api_key=settings.openai_api_key)
         
@@ -64,21 +79,8 @@ async def get_embeddings(texts: List[str]) -> List[List[float]]:
         )
         return [e.embedding for e in response.data]
     
-    elif settings.google_api_key:
-        import google.generativeai as genai
-        genai.configure(api_key=settings.google_api_key)
-        
-        embeddings = []
-        for text in texts:
-            result = genai.embed_content(
-                model="models/embedding-001",
-                content=text
-            )
-            embeddings.append(result['embedding'])
-        return embeddings
-    
     else:
-        raise Exception("No AI API key configured")
+        raise Exception("No valid AI API key configured. Please add GOOGLE_API_KEY or OPENAI_API_KEY to .env")
 
 
 async def add_video_to_index(video_id: str, transcript: str):
@@ -179,7 +181,17 @@ Context from video transcript:
 
 async def generate_llm_response(system_prompt: str, user_message: str) -> str:
     """Generate response using configured LLM"""
-    if settings.llm_provider == "openai" and settings.openai_api_key:
+    # Prioritize Google Gemini
+    if settings.google_api_key and not settings.google_api_key.startswith('your-'):
+        import google.generativeai as genai
+        genai.configure(api_key=settings.google_api_key)
+        
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        response = model.generate_content(f"{system_prompt}\n\nUser: {user_message}")
+        return response.text
+    
+    # Fallback to OpenAI
+    elif settings.openai_api_key and not settings.openai_api_key.startswith('your-'):
         import openai
         client = openai.OpenAI(api_key=settings.openai_api_key)
         
@@ -193,16 +205,8 @@ async def generate_llm_response(system_prompt: str, user_message: str) -> str:
         )
         return response.choices[0].message.content
     
-    elif settings.google_api_key:
-        import google.generativeai as genai
-        genai.configure(api_key=settings.google_api_key)
-        
-        model = genai.GenerativeModel('gemini-pro')
-        response = model.generate_content(f"{system_prompt}\n\nUser: {user_message}")
-        return response.text
-    
     else:
-        raise Exception("No LLM API key configured")
+        raise Exception("No valid LLM API key configured")
 
 
 async def search_videos(query: str, video_id: Optional[str], limit: int, db: Session) -> List[dict]:

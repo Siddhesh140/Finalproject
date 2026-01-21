@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useVideos } from '../context'
 import { searchAPI } from '../services/api'
 import { Header, VideoCard, BottomNavSearch, PageLoader, ErrorMessage, EmptyState } from '../components'
@@ -102,7 +103,7 @@ export default function Search() {
             />
 
             {/* Search Bar Section */}
-            <div className="bg-white border-b border-gray-100">
+            <div className="glass sticky top-[72px] z-10 transition-all border-none">
                 <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4 lg:py-6">
                     <div className="flex items-center gap-4 max-w-3xl">
                         <label className="flex flex-col h-12 lg:h-14 w-full">
@@ -143,8 +144,8 @@ export default function Search() {
                                 key={filter}
                                 onClick={() => setActiveFilter(filter)}
                                 className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === filter
-                                        ? 'bg-primary text-white'
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    ? 'bg-primary text-white'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                     }`}
                             >
                                 {filter}
@@ -176,29 +177,35 @@ export default function Search() {
                                 </p>
 
                                 {results.map((result, index) => (
-                                    <Link
+                                    <motion.div
                                         key={index}
-                                        to={`/player/${result.video_id}`}
-                                        className="flex flex-col md:flex-row gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.05 }}
                                     >
-                                        <div className="w-full md:w-48 lg:w-56 aspect-video bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center">
-                                            <span className="material-symbols-outlined text-gray-400 text-4xl">smart_display</span>
-                                        </div>
-                                        <div className="flex flex-col justify-center gap-2 flex-1">
-                                            <h3 className="font-semibold text-[#0d141b]">{result.video_title}</h3>
-                                            <p className="text-sm text-gray-600 line-clamp-2">{result.text}</p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                {result.timestamp_start > 0 && (
-                                                    <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">
-                                                        {formatTimestamp(result.timestamp_start)} - {formatTimestamp(result.timestamp_end)}
-                                                    </span>
-                                                )}
-                                                <span className="text-xs text-gray-400">
-                                                    {Math.round(result.relevance_score * 100)}% match
-                                                </span>
+                                        <Link
+                                            to={`/player/${result.video_id}`}
+                                            className="flex flex-col md:flex-row gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all group"
+                                        >
+                                            <div className="w-full md:w-48 lg:w-56 aspect-video bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden group-hover:shadow-glow transition-all duration-500">
+                                                <span className="material-symbols-outlined text-gray-400 text-4xl group-hover:scale-110 transition-transform duration-500">smart_display</span>
                                             </div>
-                                        </div>
-                                    </Link>
+                                            <div className="flex flex-col justify-center gap-2 flex-1">
+                                                <h3 className="font-semibold text-[#0d141b] group-hover:text-primary transition-colors">{result.video_title}</h3>
+                                                <p className="text-sm text-gray-600 line-clamp-2">{result.text}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    {result.timestamp_start > 0 && (
+                                                        <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full font-medium">
+                                                            {formatTimestamp(result.timestamp_start)} - {formatTimestamp(result.timestamp_end)}
+                                                        </span>
+                                                    )}
+                                                    <span className="text-xs text-gray-400">
+                                                        {Math.round(result.relevance_score * 100)}% match
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    </motion.div>
                                 ))}
                             </div>
                         ) : (

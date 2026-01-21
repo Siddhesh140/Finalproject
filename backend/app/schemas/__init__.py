@@ -28,6 +28,8 @@ class VideoResponse(BaseModel):
     duration: Optional[int] = None
     thumbnail_url: Optional[str] = None
     status: str
+    progress: Optional[int] = None
+    is_liked: bool = False
     created_at: Optional[datetime] = None
     
     class Config:

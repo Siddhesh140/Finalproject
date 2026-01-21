@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
+import PropTypes from 'prop-types'
 
 export default function Header({ title, icon, showBack = false, onBack }) {
     const location = useLocation()
@@ -12,15 +13,16 @@ export default function Header({ title, icon, showBack = false, onBack }) {
     const isActive = (path) => location.pathname === path
 
     return (
-        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <header className="sticky top-0 z-20 glass border-none">
             <div className="max-w-7xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     {showBack && onBack && (
                         <button
                             onClick={onBack}
-                            className="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 transition-colors"
+                            aria-label="Go back"
+                            className="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
                         >
-                            <span className="material-symbols-outlined">arrow_back</span>
+                            <span className="material-symbols-outlined" aria-hidden="true">arrow_back</span>
                         </button>
                     )}
 
@@ -46,8 +48,8 @@ export default function Header({ title, icon, showBack = false, onBack }) {
                             key={item.path}
                             to={item.path}
                             className={`font-medium transition-colors ${isActive(item.path)
-                                    ? 'text-primary font-semibold'
-                                    : 'text-gray-500 hover:text-primary'
+                                ? 'text-primary font-semibold'
+                                : 'text-gray-500 hover:text-primary'
                                 }`}
                         >
                             {item.label}
@@ -67,3 +69,15 @@ export default function Header({ title, icon, showBack = false, onBack }) {
         </header>
     )
 }
+
+Header.propTypes = {
+    title: PropTypes.string,
+    icon: PropTypes.shape({
+        name: PropTypes.string.isRequired,
+        bg: PropTypes.string,
+        color: PropTypes.string,
+    }),
+    showBack: PropTypes.bool,
+    onBack: PropTypes.func,
+}
+

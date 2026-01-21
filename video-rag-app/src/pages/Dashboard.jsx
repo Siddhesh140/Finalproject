@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useVideos } from '../context'
 import { Header, VideoCard, BottomNavDashboard, PageLoader, ErrorMessage, EmptyState, ButtonLoader } from '../components'
 
@@ -74,11 +75,15 @@ export default function Dashboard() {
             <main className="max-w-7xl mx-auto px-4 lg:px-8 py-6 lg:py-10 pb-24 md:pb-10">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* New Analysis Section */}
-                    <div className="lg:col-span-1">
-                        <h2 className="text-[#0d141b] text-xl lg:text-2xl font-bold leading-tight tracking-[-0.015em] mb-4">
+                    <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="lg:col-span-1"
+                    >
+                        <h2 className="text-[#0d141b] text-xl lg:text-2xl font-bold leading-tight tracking-[-0.015em] mb-4 pl-1">
                             New Analysis
                         </h2>
-                        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                        <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-6 transition-all duration-300 hover:shadow-glow">
                             {/* Mode Toggle */}
                             <div className="flex mb-5">
                                 <div className="flex h-12 flex-1 items-center justify-center rounded-xl bg-[#e7edf3] p-1">
@@ -86,8 +91,8 @@ export default function Dashboard() {
                                         type="button"
                                         onClick={() => setMode('link')}
                                         className={`flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-4 text-sm font-semibold transition-all ${mode === 'link'
-                                                ? 'bg-white shadow-sm text-[#0d141b]'
-                                                : 'text-[#4c739a] hover:bg-white/50'
+                                            ? 'bg-white shadow-sm text-[#0d141b]'
+                                            : 'text-[#4c739a] hover:bg-white/50'
                                             }`}
                                     >
                                         <span className="material-symbols-outlined text-lg mr-2">link</span>
@@ -97,8 +102,8 @@ export default function Dashboard() {
                                         type="button"
                                         onClick={() => setMode('upload')}
                                         className={`flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-4 text-sm font-semibold transition-all ${mode === 'upload'
-                                                ? 'bg-white shadow-sm text-[#0d141b]'
-                                                : 'text-[#4c739a] hover:bg-white/50'
+                                            ? 'bg-white shadow-sm text-[#0d141b]'
+                                            : 'text-[#4c739a] hover:bg-white/50'
                                             }`}
                                     >
                                         <span className="material-symbols-outlined text-lg mr-2">upload</span>
@@ -186,10 +191,15 @@ export default function Dashboard() {
                                 )}
                             </button>
                         </form>
-                    </div>
+                    </motion.div>
 
                     {/* Recent Analyses Section */}
-                    <div className="lg:col-span-2">
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="lg:col-span-2"
+                    >
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-[#0d141b] text-xl lg:text-2xl font-bold leading-tight tracking-tight">
                                 Recent Analyses
@@ -212,12 +222,19 @@ export default function Dashboard() {
                             />
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                                {recentVideos.map((video) => (
-                                    <VideoCard key={video.id} video={video} variant="list" />
+                                {recentVideos.map((video, index) => (
+                                    <motion.div
+                                        key={video.id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.1 + index * 0.05 }}
+                                    >
+                                        <VideoCard video={video} variant="list" />
+                                    </motion.div>
                                 ))}
                             </div>
                         )}
-                    </div>
+                    </motion.div>
                 </div>
             </main>
 
