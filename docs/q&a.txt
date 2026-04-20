@@ -1,0 +1,559 @@
+================================================================================
+                VIDEO-RAG PROJECT - Q&A FOR PRESENTATION
+================================================================================
+
+A comprehensive question and answer guide for your final year project viva.
+
+================================================================================
+                    SECTION 1: PROJECT-SPECIFIC QUESTIONS
+================================================================================
+
+Q1: What problem does your project solve?
+------------------------------------------
+A: Traditional video learning has limitations - students can't easily:
+   - Search specific topics within long videos
+   - Get instant answers about video content
+   - Test their understanding automatically
+   
+   Our Video-RAG application solves this by:
+   - Enabling AI-powered Q&A about any video
+   - Generating quizzes automatically from content
+   - Providing semantic search across all videos
+
+--------------------------------------------------------------------------------
+
+Q2: Why did you choose these specific technologies?
+----------------------------------------------------
+A: Each technology was chosen for a specific reason:
+
+   Frontend:
+   - React 19: Latest version with best performance, huge ecosystem
+   - Vite: 10x faster than Create React App for development
+   - TailwindCSS: Rapid UI development, built-in dark mode
+
+   Backend:
+   - FastAPI: Async support crucial for AI API calls (Gemini, Whisper)
+   - SQLAlchemy: Database-agnostic ORM, easy to switch to PostgreSQL
+   - Pydantic: Automatic request validation, reduces bugs
+
+   AI/ML:
+   - Whisper: Best open-source transcription, beats paid alternatives
+   - ChromaDB: Purpose-built for RAG, easy to use
+   - Gemini: Free tier available, competitive with GPT-4
+
+--------------------------------------------------------------------------------
+
+Q3: What is unique about your project compared to existing solutions?
+---------------------------------------------------------------------
+A: Key differentiators:
+
+   1. RAG-based Q&A: Unlike YouTube comments or basic search, we use
+      semantic understanding to find relevant content
+
+   2. Quiz Generation: No existing platform generates quizzes from
+      arbitrary video content using AI
+
+   3. Unified Platform: Combines video library, chat, quiz, and search
+      in one application
+
+   4. Open Architecture: Works with any video, not locked to one platform
+
+--------------------------------------------------------------------------------
+
+Q4: What challenges did you face during development?
+----------------------------------------------------
+A: Major challenges and solutions:
+
+   Challenge 1: Handling long transcripts
+   - Problem: LLMs have token limits (~8K-128K tokens)
+   - Solution: Chunking with overlap, only send relevant chunks to LLM
+
+   Challenge 2: Slow AI responses
+   - Problem: Whisper + Gemini calls take 5-30 seconds
+   - Solution: Async processing, progress indicators, background tasks
+
+   Challenge 3: Accurate semantic search
+   - Problem: Keyword search misses conceptually related content
+   - Solution: Vector embeddings capture semantic meaning
+
+   Challenge 4: Quiz quality
+   - Problem: AI sometimes generates poor questions
+   - Solution: Structured prompts, JSON format enforcement, fallbacks
+
+--------------------------------------------------------------------------------
+
+Q5: What are the limitations of your project?
+---------------------------------------------
+A: Current limitations:
+
+   1. API Dependency: Requires Google/OpenAI API keys (cost for heavy use)
+   2. Transcription Accuracy: Whisper struggles with heavy accents, music
+   3. No User Authentication: Currently single-user (can be added)
+   4. Local Storage: SQLite limits scalability (can migrate to PostgreSQL)
+   5. Real-time Processing: Videos must be processed before Q&A works
+
+--------------------------------------------------------------------------------
+
+Q6: What future improvements would you make?
+--------------------------------------------
+A: Roadmap for future development:
+
+   Short-term:
+   - Add user authentication (JWT tokens)
+   - Support more video sources (Vimeo, direct uploads)
+   - Add collaborative features (share notes, quizzes)
+
+   Medium-term:
+   - Deploy to cloud (AWS/GCP)
+   - Mobile app (React Native)
+   - Real-time transcription (live videos)
+
+   Long-term:
+   - Multi-language support
+   - Custom LLM fine-tuning for better quiz generation
+   - Integration with LMS platforms (Moodle, Canvas)
+
+--------------------------------------------------------------------------------
+
+Q7: How do you handle security?
+-------------------------------
+A: Security measures implemented:
+
+   1. API Keys: Stored in .env files, never committed to git
+   2. Rate Limiting: SlowAPI prevents abuse (100 requests/minute)
+   3. Input Validation: Pydantic validates all inputs
+   4. CORS: Only allowed origins can access API
+   5. SQL Injection: SQLAlchemy ORM prevents injection attacks
+
+   What's missing (for production):
+   - User authentication (JWT/OAuth)
+   - HTTPS enforcement
+   - Input sanitization for XSS
+
+================================================================================
+                      SECTION 2: DEEP DIVE - RAG
+================================================================================
+
+Q8: What is RAG and why did you use it?
+---------------------------------------
+A: RAG = Retrieval Augmented Generation
+
+   Problem: LLMs like GPT/Gemini have knowledge cutoffs and don't know
+   about YOUR specific videos.
+
+   Solution: Instead of training a new model (expensive), we:
+   1. Store our content in a searchable format (vectors)
+   2. When user asks a question, find relevant content first
+   3. Send content + question to LLM
+   4. LLM generates answer using OUR content as context
+
+   Why RAG over fine-tuning?
+   - No GPU required for training
+   - Content can be updated instantly
+   - Much cheaper and faster
+   - Works with any LLM
+
+--------------------------------------------------------------------------------
+
+Q9: Explain the chunking process in detail.
+-------------------------------------------
+A: Chunking splits long transcripts into smaller pieces.
+
+   Our implementation:
+   - Chunk size: ~500 words
+   - Overlap: 50 words (prevents losing context at boundaries)
+   - Metadata: Start/end timestamps for each chunk
+
+   Example:
+   Original transcript: 10,000 words
+   After chunking: ~20 chunks of 500 words each
+
+   Code (rag_service.py):
+   
+   def chunk_text(text, chunk_size=500, overlap=50):
+       words = text.split()
+       chunks = []
+       for i in range(0, len(words), chunk_size - overlap):
+           chunk_words = words[i:i + chunk_size]
+           chunks.append({
+               "text": " ".join(chunk_words),
+               "start": estimate_timestamp(i),
+               "end": estimate_timestamp(i + len(chunk_words))
+           })
+       return chunks
+
+   Why overlap?
+   - Prevents cutting sentences mid-thought
+   - Important concepts at chunk boundaries aren't lost
+
+--------------------------------------------------------------------------------
+
+Q10: How do vector embeddings work?
+-----------------------------------
+A: Embeddings convert text to numbers that capture meaning.
+
+   Process:
+   1. Text input: "The cat sat on the mat"
+   2. Embedding model processes text
+   3. Output: Vector of 768 numbers [0.2, 0.8, -0.3, ...]
+
+   Key insight:
+   - Similar meanings → Similar vectors
+   - "cat on mat" and "kitten on rug" → vectors close together
+   - "Python programming" → vector far from cat vectors
+
+   In our project:
+   - We use Google's text-embedding-004 model
+   - Each chunk becomes a 768-dimensional vector
+   - Stored in ChromaDB for fast similarity search
+
+   Similarity measurement:
+   - Cosine similarity: measures angle between vectors
+   - Score 1.0 = identical meaning
+   - Score 0.0 = completely unrelated
+
+--------------------------------------------------------------------------------
+
+Q11: How does ChromaDB store and search vectors?
+-------------------------------------------------
+A: ChromaDB is a vector database optimized for AI applications.
+
+   Storage:
+   +----------------------------------------------------------+
+   | Collection: video_chunks                                  |
+   +----------------------------------------------------------+
+   | ID          | Embedding [768 dims] | Metadata             |
+   +----------------------------------------------------------+
+   | video1_0    | [0.2, 0.8, ...]      | {video_id, start: 0} |
+   | video1_1    | [0.3, 0.7, ...]      | {video_id, start: 30}|
+   +----------------------------------------------------------+
+
+   Search process:
+   1. Convert query to embedding: "What is machine learning?"
+   2. Find vectors with smallest cosine distance
+   3. Return top K results (we use K=5)
+
+   Why ChromaDB over regular database?
+   - Regular DB: Can only do exact match or LIKE queries
+   - ChromaDB: Finds semantically similar content
+   - Example: "ML" finds "machine learning" content
+
+================================================================================
+                    SECTION 3: DEEP DIVE - LLM INTEGRATION
+================================================================================
+
+Q12: How do you generate prompts for the LLM?
+---------------------------------------------
+A: We use structured prompts with system context.
+
+   RAG Chat prompt structure:
+   
+   SYSTEM: You are an AI assistant helping users understand the video 
+           "{video_title}". Use the following transcript excerpts to 
+           answer the user's question. Always cite timestamps.
+           
+           Context from video transcript:
+           [120s - 150s]: Content about topic X...
+           [200s - 230s]: More relevant content...
+           
+   USER: What is topic X?
+
+   Quiz generation prompt structure:
+   
+   SYSTEM: You are a quiz generator. Create {count} multiple choice 
+           questions based on the video transcript.
+           
+           Each question should:
+           - Have 4 options (A, B, C, D)
+           - Have exactly one correct answer
+           
+           Return JSON format:
+           [{"question": "...", "options": [...], "correct": "a"}]
+
+--------------------------------------------------------------------------------
+
+Q13: How do you handle LLM response parsing?
+--------------------------------------------
+A: LLM responses are text, but we need structured data.
+
+   Challenge: LLM might return:
+   - JSON inside markdown code blocks
+   - Malformed JSON
+   - Extra text before/after JSON
+
+   Solution (quiz_service.py):
+   
+   def parse_llm_response(response):
+       # Extract JSON from markdown if present
+       if "```json" in response:
+           json_text = response.split("```json")[1].split("```")[0]
+       elif "```" in response:
+           json_text = response.split("```")[1].split("```")[0]
+       else:
+           json_text = response
+       
+       try:
+           return json.loads(json_text.strip())
+       except JSONDecodeError:
+           return fallback_questions()  # Graceful degradation
+
+--------------------------------------------------------------------------------
+
+Q14: What is temperature in LLM calls?
+--------------------------------------
+A: Temperature controls randomness in LLM responses.
+
+   Temperature = 0.0: Deterministic, always same output
+   Temperature = 0.7: Balanced (what we use)
+   Temperature = 1.0+: More creative/random
+
+   Our usage:
+   - RAG chat: 0.7 (natural, varied responses)
+   - Quiz generation: 0.5 (more consistent format)
+
+   Example:
+   Same prompt with temperature 0: Always "The cat sat on the mat."
+   Same prompt with temperature 1: "A feline rested upon the rug."
+
+================================================================================
+                  SECTION 4: DEEP DIVE - ASYNC & PERFORMANCE
+================================================================================
+
+Q15: Why is async important for this project?
+---------------------------------------------
+A: AI operations are I/O-bound (waiting for external APIs).
+
+   Without async (synchronous):
+   - User 1 asks question → Server calls Gemini (3 seconds)
+   - User 2 asks question → WAITS for User 1 to finish
+   - User 3 → WAITS even longer
+
+   With async:
+   - User 1 asks question → Server calls Gemini (starts waiting)
+   - User 2 asks question → Server calls Gemini immediately
+   - User 3 → Also starts immediately
+   - All 3 responses come back around the same time
+
+   Implementation:
+   
+   # Async function - non-blocking
+   async def get_rag_response(video_id, question):
+       chunks = await search_similar_chunks(question)  # Await I/O
+       response = await generate_llm_response(prompt)   # Await I/O
+       return response
+
+--------------------------------------------------------------------------------
+
+Q16: How do you handle video processing in the background?
+----------------------------------------------------------
+A: Video processing is a long operation (30+ seconds).
+
+   Flow:
+   1. User uploads video
+   2. Server immediately returns: {"status": "processing", "id": "123"}
+   3. Background task runs: download → transcribe → embed
+   4. Frontend polls status: GET /videos/123/status
+   5. When complete, frontend updates UI
+
+   This prevents:
+   - Request timeouts (HTTP typically 30 second limit)
+   - Browser hanging
+   - User frustration
+
+================================================================================
+                    SECTION 5: DEEP DIVE - FRONTEND
+================================================================================
+
+Q17: Why Context API instead of Redux?
+--------------------------------------
+A: For this project size, Context API is sufficient.
+
+   Context API advantages:
+   - Built into React (no extra dependency)
+   - Simpler syntax
+   - Good for 3-4 global states
+
+   When to use Redux:
+   - Very complex state with many reducers
+   - Need time-travel debugging
+   - Large team needing strict patterns
+
+   Our contexts:
+   - VideoContext: Video CRUD (fetch, add, delete)
+   - ChatContext: Chat messages
+   - QuizContext: Quiz state
+   - ThemeContext: Dark/light mode
+
+--------------------------------------------------------------------------------
+
+Q18: What is the Virtual DOM?
+-----------------------------
+A: React's performance optimization technique.
+
+   Without Virtual DOM:
+   Any change → Update entire real DOM → Slow (DOM is expensive)
+
+   With Virtual DOM:
+   1. React keeps copy of DOM in memory (virtual)
+   2. When state changes, update virtual DOM first
+   3. Compare old vs new virtual DOM (diffing)
+   4. Only update changed parts in real DOM (reconciliation)
+
+   Result: Faster updates, better performance
+
+--------------------------------------------------------------------------------
+
+Q19: How does React Router work?
+--------------------------------
+A: Client-side routing without page reloads.
+
+   Traditional websites:
+   Click link → Browser requests new page → Server responds → Full reload
+
+   React Router (SPA):
+   Click link → JavaScript updates URL → React renders new component
+   
+   No server request needed!
+
+   Our routes:
+   /dashboard      → <Dashboard />
+   /player/:id     → <Player />      (id is a parameter)
+   /quiz/:quizId   → <Quiz />
+
+================================================================================
+                    SECTION 6: DEEP DIVE - DATABASE
+================================================================================
+
+Q20: Why SQLite? When would you switch?
+---------------------------------------
+A: SQLite is perfect for development and small deployments.
+
+   SQLite advantages:
+   - No server setup needed
+   - Single file storage (videorag.db)
+   - Zero configuration
+   - Good for up to ~100K users
+
+   Switch to PostgreSQL when:
+   - Multiple servers need same database
+   - Need concurrent writes at scale
+   - Want advanced features (full-text search, JSONB)
+
+   Migration is easy with SQLAlchemy:
+   Just change DATABASE_URL in .env:
+   
+   # SQLite
+   DATABASE_URL=sqlite:///./videorag.db
+   
+   # PostgreSQL
+   DATABASE_URL=postgresql://user:pass@localhost/videorag
+
+--------------------------------------------------------------------------------
+
+Q21: What is database migration and why use Alembic?
+----------------------------------------------------
+A: Migrations track database schema changes over time.
+
+   Problem:
+   - You add a column to Video model
+   - Production database still has old schema
+   - How to update without losing data?
+
+   Solution - Alembic:
+   1. Detect model changes
+   2. Generate migration script
+   3. Apply changes safely
+
+   Commands:
+   alembic revision --autogenerate -m "Add column"  # Create migration
+   alembic upgrade head                              # Apply migration
+
+================================================================================
+                    SECTION 7: GENERAL VIVA QUESTIONS
+================================================================================
+
+Q22: What is REST API?
+----------------------
+A: REST = Representational State Transfer
+
+   Architectural style with rules:
+   1. Use HTTP methods meaningfully:
+      GET = Read, POST = Create, PUT = Update, DELETE = Remove
+   2. Resources identified by URLs: /api/videos/123
+   3. Stateless: Each request contains all needed info
+   4. Return standard formats (JSON)
+
+--------------------------------------------------------------------------------
+
+Q23: What is ORM?
+-----------------
+A: ORM = Object-Relational Mapping
+
+   Converts between Python objects and database rows:
+   
+   Python class Video → database table "videos"
+   video.title → SELECT title FROM videos
+   
+   Benefits:
+   - Write Python, not SQL
+   - Prevents SQL injection
+   - Database-agnostic code
+
+--------------------------------------------------------------------------------
+
+Q24: What is CORS and why is it needed?
+---------------------------------------
+A: CORS = Cross-Origin Resource Sharing
+
+   Problem:
+   - Frontend runs on localhost:5173
+   - Backend runs on localhost:8000
+   - Browsers block cross-origin requests by default (security)
+
+   Solution:
+   Backend explicitly allows frontend origin:
+   
+   app.add_middleware(
+       CORSMiddleware,
+       allow_origins=["http://localhost:5173"],
+       allow_methods=["*"],
+   )
+
+--------------------------------------------------------------------------------
+
+Q25: Explain the complete flow when a user asks a question about a video.
+--------------------------------------------------------------------------
+A: End-to-end RAG chat flow:
+
+   1. USER types: "What is machine learning?"
+   
+   2. FRONTEND sends POST /api/chat:
+      {videoId: "abc123", message: "What is machine learning?"}
+   
+   3. BACKEND receives request:
+      a. Validates input with Pydantic
+      b. Creates embedding for question (text-embedding-004)
+      c. Searches ChromaDB for similar chunks (top 5)
+      d. Builds prompt: system context + chunks + question
+      e. Sends to Gemini API
+      f. Receives response
+      g. Extracts timestamp references
+      h. Returns JSON response
+   
+   4. FRONTEND receives:
+      {
+        message: "Machine learning is... (from 2:30 in video)",
+        references: [{start: 150, end: 180, text: "..."}]
+      }
+   
+   5. USER sees answer with clickable timestamp links
+
+================================================================================
+                          END OF Q&A DOCUMENT
+================================================================================
+
+Tip: Practice explaining RAG and the end-to-end flow - these are the most 
+likely questions for a final year project viva!
+
+Created: 2026-01-30
+Project: Video-RAG Application

@@ -1,0 +1,573 @@
+================================================================================
+                    VIDEO-RAG APPLICATION - ARCHITECTURE
+================================================================================
+
+A complete guide to all technologies, their uses, workflow, and system design.
+
+================================================================================
+                           TABLE OF CONTENTS
+================================================================================
+
+1. PROJECT OVERVIEW
+2. SYSTEM ARCHITECTURE DIAGRAM
+3. TECHNOLOGY STACK
+4. FRONTEND TECHNOLOGIES
+5. BACKEND TECHNOLOGIES
+6. AI/ML TECHNOLOGIES
+7. DATABASE TECHNOLOGIES
+8. DATA FLOW WORKFLOWS
+9. KEY CONCEPTS EXPLAINED
+
+================================================================================
+                         1. PROJECT OVERVIEW
+================================================================================
+
+Video-RAG is a full-stack AI-powered video learning platform that:
+  - Processes videos from YouTube URLs or file uploads
+  - Transcribes audio using AI (Whisper)
+  - Enables RAG-powered chat (ask questions about videos)
+  - Generates quizzes from video content
+  - Provides semantic search across all videos
+
+================================================================================
+                    2. SYSTEM ARCHITECTURE DIAGRAM
+================================================================================
+
++-------------------------------------------------------------------------+
+|                           USER (Browser)                                 |
++-------------------------------------------------------------------------+
+                                    |
+                                    | HTTP Requests
+                                    v
++-------------------------------------------------------------------------+
+|                          FRONTEND LAYER                                  |
+|  +-------------------------------------------------------------------+  |
+|  |                   React 19 Single Page App                        |  |
+|  |  +-------------+  +-------------+  +-------------+  +-----------+ |  |
+|  |  | Dashboard   |  | Library     |  | Player      |  | Quiz      | |  |
+|  |  +-------------+  +-------------+  +-------------+  +-----------+ |  |
+|  |                                                                    |  |
+|  |  +-----------------+  +----------------+  +--------------------+  |  |
+|  |  | VideoContext    |  | ChatContext    |  | QuizContext        |  |  |
+|  |  +-----------------+  +----------------+  +--------------------+  |  |
+|  |                                                                    |  |
+|  |  +--------------------------------------------------------------+ |  |
+|  |  |                   API Service Layer                          | |  |
+|  |  |   videoAPI  |  chatAPI  |  quizAPI  |  searchAPI             | |  |
+|  |  +--------------------------------------------------------------+ |  |
+|  +-------------------------------------------------------------------+  |
+|  Technologies: React 19, Vite, TailwindCSS 4, React Router 7           |
+|  Port: 5173 (development)                                               |
++-------------------------------------------------------------------------+
+                                    |
+                                    | REST API (JSON over HTTP)
+                                    v
++-------------------------------------------------------------------------+
+|                          BACKEND LAYER                                   |
+|  +-------------------------------------------------------------------+  |
+|  |                      FastAPI Application                          |  |
+|  |                                                                    |  |
+|  |  ROUTERS (API Endpoints):                                         |  |
+|  |  +----------+  +--------+  +--------+  +--------+  +--------+     |  |
+|  |  | /videos  |  | /chat  |  | /quiz  |  | /search|  | /notes |     |  |
+|  |  +----------+  +--------+  +--------+  +--------+  +--------+     |  |
+|  |                                                                    |  |
+|  |  SERVICES (Business Logic):                                       |  |
+|  |  +------------------+  +---------------+  +------------------+    |  |
+|  |  | video_processor  |  | rag_service   |  | quiz_service     |    |  |
+|  |  | - Download video |  | - Embeddings  |  | - Generate quiz  |    |  |
+|  |  | - Transcription  |  | - RAG chat    |  | - Analyze results|    |  |
+|  |  +------------------+  +---------------+  +------------------+    |  |
+|  |                                                                    |  |
+|  |  MODELS (ORM):                                                    |  |
+|  |  +--------+  +--------+  +--------+  +--------+                   |  |
+|  |  | Video  |  | Chat   |  | Quiz   |  | Note   |                   |  |
+|  |  +--------+  +--------+  +--------+  +--------+                   |  |
+|  +-------------------------------------------------------------------+  |
+|  Technologies: FastAPI, SQLAlchemy, Pydantic, Uvicorn                   |
+|  Port: 8000                                                             |
++-------------------------------------------------------------------------+
+                                    |
+          +-------------------------+-------------------------+
+          |                         |                         |
+          v                         v                         v
++-------------------+    +-------------------+    +-------------------+
+|   SQLITE DATABASE |    |     CHROMADB      |    |   EXTERNAL AI     |
+|  +-------------+  |    |  +-------------+  |    |  +-------------+  |
+|  | videos      |  |    |  | Embeddings  |  |    |  | Whisper     |  |
+|  | quizzes     |  |    |  | (Vectors)   |  |    |  | (Speech2Text)|  |
+|  | chat_msgs   |  |    |  +-------------+  |    |  +-------------+  |
+|  | notes       |  |    |                   |    |  +-------------+  |
+|  +-------------+  |    |  Semantic Search  |    |  | Gemini/GPT  |  |
++-------------------+    +-------------------+    |  | (LLM)       |  |
+   Relational Data          Vector Database      |  +-------------+  |
+                                                  +-------------------+
+                                                      AI Services
+
+================================================================================
+                        3. TECHNOLOGY STACK
+================================================================================
+
+FRONTEND:
++-----------------+----------+---------------------------------------------+
+| Technology      | Version  | Purpose                                     |
++-----------------+----------+---------------------------------------------+
+| React           | 19.2.0   | UI component library                        |
+| Vite            | 7.2.4    | Build tool & dev server                     |
+| TailwindCSS     | 4.1.18   | Utility-first CSS framework                 |
+| React Router    | 7.12.0   | Client-side routing                         |
+| Framer Motion   | 12.27.5  | Animation library                           |
+| PropTypes       | 15.8.1   | Runtime type checking                       |
++-----------------+----------+---------------------------------------------+
+
+BACKEND:
++-----------------+----------+---------------------------------------------+
+| Technology      | Version  | Purpose                                     |
++-----------------+----------+---------------------------------------------+
+| FastAPI         | 0.128.0  | Async web framework                         |
+| SQLAlchemy      | 2.0.45   | ORM for database operations                 |
+| Pydantic        | 2.12.5   | Data validation                             |
+| Uvicorn         | 0.40.0   | ASGI server                                 |
+| Alembic         | 1.18.1   | Database migrations                         |
+| SlowAPI         | 0.1.9    | Rate limiting                               |
++-----------------+----------+---------------------------------------------+
+
+AI/ML:
++-----------------+----------+---------------------------------------------+
+| Technology      | Version  | Purpose                                     |
++-----------------+----------+---------------------------------------------+
+| OpenAI Whisper  | 20250625 | Audio transcription                         |
+| Google Gemini   | 0.8.6    | LLM for chat & quiz                         |
+| OpenAI GPT      | 2.15.0   | Alternative LLM                             |
+| ChromaDB        | 1.4.1    | Vector database for RAG                     |
++-----------------+----------+---------------------------------------------+
+
+================================================================================
+                      4. FRONTEND TECHNOLOGIES
+================================================================================
+
+REACT 19
+--------
+What: JavaScript library for building user interfaces
+Why:  Component-based, virtual DOM, huge ecosystem
+Use:  Building all UI components and pages
+
+Example:
+  function VideoCard({ video }) {
+    return <div className="card">{video.title}</div>;
+  }
+
+--------------------------------------------------------------------------------
+
+VITE
+----
+What: Modern build tool and development server
+Why:  Lightning-fast HMR, native ES modules
+Use:  Development server on port 5173, production builds
+
+Commands:
+  npm run dev   -> Start development server
+  npm run build -> Create production bundle
+
+--------------------------------------------------------------------------------
+
+TAILWINDCSS 4
+-------------
+What: Utility-first CSS framework
+Why:  No custom CSS needed, consistent design, dark mode support
+Use:  Styling all components
+
+Example:
+  <button className="bg-blue-500 hover:bg-blue-700 text-white p-4 rounded">
+    Click Me
+  </button>
+
+--------------------------------------------------------------------------------
+
+REACT ROUTER 7
+--------------
+What: Client-side routing library
+Why:  SPA navigation without page reloads
+Use:  Navigating between pages
+
+Routes:
+  /auth         -> Login/Signup
+  /dashboard    -> Home page
+  /library      -> Video library
+  /player/:id   -> Video player with chat
+  /quiz/:id     -> Take quiz
+  /search       -> Semantic search
+
+--------------------------------------------------------------------------------
+
+FRAMER MOTION
+-------------
+What: Animation library for React
+Why:  Declarative animations, spring physics
+Use:  Smooth page transitions, UI animations
+
+Example:
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ duration: 0.3 }}
+  />
+
+================================================================================
+                      5. BACKEND TECHNOLOGIES
+================================================================================
+
+FASTAPI
+-------
+What: Modern, fast Python web framework
+Why:  Async support, auto docs, type validation
+Use:  Building REST API endpoints
+
+Features:
+  - Async/await for non-blocking I/O
+  - Automatic Swagger docs at /docs
+  - Pydantic integration for validation
+
+Example:
+  @app.post("/videos")
+  async def create_video(video: VideoCreate):
+      return {"id": "123", **video.dict()}
+
+--------------------------------------------------------------------------------
+
+SQLALCHEMY
+----------
+What: Python ORM (Object-Relational Mapper)
+Why:  Write Python instead of SQL, database agnostic
+Use:  All database operations (CRUD)
+
+Example:
+  class Video(Base):
+      __tablename__ = "videos"
+      id = Column(String, primary_key=True)
+      title = Column(String)
+
+  # Query
+  video = db.query(Video).filter(Video.id == "123").first()
+
+--------------------------------------------------------------------------------
+
+PYDANTIC
+--------
+What: Data validation using Python type hints
+Why:  Automatic validation, clear errors
+Use:  Request/response validation, settings
+
+Example:
+  class VideoCreate(BaseModel):
+      url: str
+      title: str
+
+  # Automatic validation on API requests
+
+--------------------------------------------------------------------------------
+
+UVICORN
+-------
+What: ASGI server for Python async apps
+Why:  Production-ready, HTTP/2 support
+Use:  Running FastAPI application
+
+Command:
+  uvicorn app.main:app --reload --port 8000
+
+================================================================================
+                       6. AI/ML TECHNOLOGIES
+================================================================================
+
+OPENAI WHISPER
+--------------
+What: AI model for speech-to-text transcription
+Why:  High accuracy, multi-language, open-source
+Use:  Converting video audio to text transcripts
+
+Flow:
+  Video Audio -> Whisper Model -> Text Transcript
+
+--------------------------------------------------------------------------------
+
+GOOGLE GEMINI / OPENAI GPT
+--------------------------
+What: Large Language Models (LLMs)
+Why:  Natural language understanding, context-aware
+Use:  RAG chat responses, quiz generation
+
+Examples:
+  - Answer questions about video content
+  - Generate multiple-choice quiz questions
+  - Analyze quiz results and provide feedback
+
+--------------------------------------------------------------------------------
+
+CHROMADB
+--------
+What: Vector database for AI applications
+Why:  Semantic similarity search, persistent storage
+Use:  Storing embeddings, RAG retrieval
+
+How it works:
+  1. Convert text chunks to vectors (embeddings)
+  2. Store vectors in ChromaDB
+  3. Query: Convert question to vector
+  4. Find similar vectors = relevant content
+
+================================================================================
+                      7. DATABASE TECHNOLOGIES
+================================================================================
+
+SQLITE
+------
+What: Lightweight relational database
+Why:  No server needed, file-based, easy setup
+Use:  Storing videos, quizzes, chat history, notes
+
+Tables:
+  +----------------+
+  |    videos      |
+  +----------------+
+  | id             |
+  | title          |
+  | url            |
+  | transcript     |
+  | status         |
+  | created_at     |
+  +----------------+
+
+  +----------------+
+  |    quizzes     |
+  +----------------+
+  | id             |
+  | video_id       |
+  | questions      |
+  | created_at     |
+  +----------------+
+
+--------------------------------------------------------------------------------
+
+CHROMADB (Vector Database)
+--------------------------
+What: Specialized database for vector embeddings
+Why:  Fast similarity search, designed for AI
+Use:  RAG (Retrieval Augmented Generation)
+
+Storage:
+  +--------------------------------------------------+
+  |                  video_chunks                     |
+  +--------------------------------------------------+
+  | id          | embedding (768 dims) | metadata    |
+  +--------------------------------------------------+
+  | video1_0    | [0.2, 0.8, ...]      | {start: 0}  |
+  | video1_1    | [0.3, 0.7, ...]      | {start: 30} |
+  +--------------------------------------------------+
+
+================================================================================
+                      8. DATA FLOW WORKFLOWS
+================================================================================
+
+WORKFLOW 1: VIDEO UPLOAD
+------------------------
+
+User                Frontend            Backend           AI Services
+ |                     |                   |                   |
+ |--Upload Video------>|                   |                   |
+ |                     |--POST /videos---->|                   |
+ |                     |                   |--Transcribe------>|
+ |                     |                   |<--Transcript------|
+ |                     |                   |                   |
+ |                     |                   |--Create Embeddings|
+ |                     |                   |     (ChromaDB)    |
+ |                     |<--Video Created---|                   |
+ |<--Show Success------|                   |                   |
+
+--------------------------------------------------------------------------------
+
+WORKFLOW 2: RAG CHAT (Ask Question About Video)
+-----------------------------------------------
+
+User                Frontend            Backend           ChromaDB      LLM
+ |                     |                   |                  |          |
+ |--"What is X?"------>|                   |                  |          |
+ |                     |--POST /chat------>|                  |          |
+ |                     |                   |--Search--------->|          |
+ |                     |                   |<--Top 5 chunks---|          |
+ |                     |                   |                  |          |
+ |                     |                   |--Prompt + Context---------->|
+ |                     |                   |<--Generated Answer----------|
+ |                     |<--Answer + Refs---|                  |          |
+ |<--Display Answer----|                   |                  |          |
+
+--------------------------------------------------------------------------------
+
+WORKFLOW 3: QUIZ GENERATION
+---------------------------
+
+User                Frontend            Backend              LLM
+ |                     |                   |                   |
+ |--Generate Quiz----->|                   |                   |
+ |                     |--POST /quiz------>|                   |
+ |                     |                   |--Get transcript   |
+ |                     |                   |                   |
+ |                     |                   |--"Create MCQs"--->|
+ |                     |                   |<--JSON questions--|
+ |                     |<--Quiz Created----|                   |
+ |<--Show Quiz---------|                   |                   |
+
+================================================================================
+                     9. KEY CONCEPTS EXPLAINED
+================================================================================
+
+RAG (RETRIEVAL AUGMENTED GENERATION)
+------------------------------------
+Problem: LLMs don't know about YOUR specific videos
+Solution: Combine retrieval with generation
+
+  1. CHUNK    - Split transcript into ~500 word pieces
+  2. EMBED    - Convert each chunk to 768-dimension vector
+  3. STORE    - Save vectors in ChromaDB
+  4. RETRIEVE - Find chunks similar to user's question
+  5. GENERATE - Send question + relevant chunks to LLM
+
+  +------------------------------------------------------------------+
+  |                    RAG Pipeline                                   |
+  |                                                                   |
+  |  [Question] --> [Vectorize] --> [Search ChromaDB]                |
+  |                                        |                          |
+  |                                        v                          |
+  |                              [Relevant Chunks]                    |
+  |                                        |                          |
+  |                                        v                          |
+  |                     [LLM Prompt: Context + Question]             |
+  |                                        |                          |
+  |                                        v                          |
+  |                            [AI-Generated Answer]                  |
+  +------------------------------------------------------------------+
+
+--------------------------------------------------------------------------------
+
+VECTOR EMBEDDINGS
+-----------------
+What: Numerical representations of text (768 numbers)
+Why:  Similar meanings = similar vectors
+
+  "The cat sat on the mat"  -->  [0.2, 0.8, -0.3, 0.1, ...]
+  "A kitten was on the rug" -->  [0.25, 0.75, -0.28, 0.15, ...]  (Similar!)
+  "Python is a language"    -->  [0.9, -0.5, 0.2, 0.7, ...]      (Different!)
+
+--------------------------------------------------------------------------------
+
+ORM (OBJECT-RELATIONAL MAPPING)
+-------------------------------
+What: Technique to use objects instead of SQL
+Why:  Easier, safer, database-agnostic
+
+  Without ORM:
+    cursor.execute("SELECT * FROM videos WHERE id = ?", (id,))
+    row = cursor.fetchone()
+    title = row[1]
+
+  With ORM (SQLAlchemy):
+    video = db.query(Video).filter(Video.id == id).first()
+    title = video.title
+
+--------------------------------------------------------------------------------
+
+REST API
+--------
+What: Architectural style for web services
+Why:  Standard, stateless, scalable
+
+  Your API:
+    GET    /api/videos        - List all videos
+    POST   /api/videos        - Create video
+    GET    /api/videos/{id}   - Get single video
+    DELETE /api/videos/{id}   - Delete video
+    POST   /api/chat          - Send message to AI
+    POST   /api/quiz/generate - Create quiz
+
+--------------------------------------------------------------------------------
+
+REST API vs FASTAPI - KEY DIFFERENCE
+-------------------------------------
+These are NOT alternatives - they work together!
+
+  REST API = The PATTERN (set of rules/guidelines)
+  FastAPI  = The TOOL (Python framework that follows the pattern)
+
+Analogy:
+  REST    = Recipe (rules for how a dish should be made)
+  FastAPI = Chef (who follows the recipe to cook)
+
++------------------------------------------------------------------+
+|                         REST API                                  |
+|                    (Design Pattern/Rules)                         |
+|                                                                   |
+|   Rules:                                                          |
+|   - Use HTTP methods (GET, POST, PUT, DELETE)                    |
+|   - Resources identified by URLs (/api/videos)                   |
+|   - Stateless communication                                       |
+|   - Return JSON responses                                         |
++------------------------------------------------------------------+
+                              |
+                              | Implemented by
+                              v
++------------------------------------------------------------------+
+|                         FastAPI                                   |
+|                    (Python Framework)                             |
+|                                                                   |
+|   - Something you install: pip install fastapi                   |
+|   - Actual Python code you write                                 |
+|   - Automatically follows REST principles                        |
+|   - Adds features: async, validation, auto-docs                  |
++------------------------------------------------------------------+
+
+Comparison:
++---------------+---------------------------+---------------------------+
+| Aspect        | REST API                  | FastAPI                   |
++---------------+---------------------------+---------------------------+
+| What is it?   | Architecture pattern      | Python framework          |
+| Install?      | No (just guidelines)      | Yes (pip install)         |
+| Language      | Language-agnostic         | Python only               |
+| You write     | Nothing (it's a concept)  | Actual code               |
++---------------+---------------------------+---------------------------+
+
+Other frameworks that also implement REST:
+  - Flask (Python)
+  - Express (JavaScript)
+  - Django REST Framework (Python)
+  - Spring Boot (Java)
+
+Why FastAPI for REST?
+  1. Async support (handles slow AI calls efficiently)
+  2. Automatic Swagger docs at /docs
+  3. Built-in validation with Pydantic
+  4. Fastest Python REST framework
+
+Example - FastAPI implementing REST:
+
+  from fastapi import FastAPI
+  app = FastAPI()
+
+  @app.get("/videos")           # REST: GET = Read
+  async def get_videos():
+      return videos
+
+  @app.post("/videos")          # REST: POST = Create
+  async def create_video(data):
+      return new_video
+
+  @app.delete("/videos/{id}")   # REST: DELETE = Remove
+  async def delete_video(id):
+      return {"deleted": id}
+
+================================================================================
+                            END OF DOCUMENT
+================================================================================
+
+Created: 2026-01-30
+Project: Video-RAG Application
+Author: Final Year Project Team

@@ -1,286 +1,194 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useVideos } from '../context'
 import { searchAPI } from '../services/api'
-import { Header, VideoCard, BottomNavSearch, PageLoader, ErrorMessage, EmptyState } from '../components'
+import { Sidebar } from '../components'
 
 export default function Search() {
     const { videos, fetchVideos } = useVideos()
     const [searchQuery, setSearchQuery] = useState('')
     const [results, setResults] = useState([])
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState('')
-    const [activeFilter, setActiveFilter] = useState('All')
-    const [recentSearches, setRecentSearches] = useState([])
+    const [searched, setSearched] = useState(false)
 
-    const filters = ['All', 'Videos', 'Transcripts', 'Notes', 'Quizzes']
-
-    // Load videos for local search fallback
     useEffect(() => {
-        if (videos.length === 0) {
-            fetchVideos()
-        }
-
-        // Load recent searches from localStorage
-        const saved = localStorage.getItem('recentSearches')
-        if (saved) {
-            setRecentSearches(JSON.parse(saved).slice(0, 5))
-        }
+        fetchVideos()
     }, [])
 
-    // Debounced search
-    const performSearch = useCallback(async () => {
-        if (!searchQuery.trim()) {
-            setResults([])
-            return
-        }
+    const handleSearch = async (e) => {
+        e.preventDefault()
+        if (!searchQuery.trim()) return
 
         setLoading(true)
-        setError('')
-
+        setSearched(true)
         try {
-            // Try API search first
-            const response = await searchAPI.search(searchQuery, { limit: 20 })
+            const response = await searchAPI.search(searchQuery)
             setResults(response.results || [])
-
-            // Save to recent searches
-            const newRecent = [searchQuery, ...recentSearches.filter(s => s !== searchQuery)].slice(0, 5)
-            setRecentSearches(newRecent)
-            localStorage.setItem('recentSearches', JSON.stringify(newRecent))
         } catch (err) {
-            // Fallback to local video search
-            const query = searchQuery.toLowerCase()
-            const localResults = videos
-                .filter(v => v.title?.toLowerCase().includes(query))
-                .map(v => ({
-                    video_id: v.id,
-                    video_title: v.title,
-                    text: v.title,
-                    timestamp_start: 0,
-                    timestamp_end: 0,
-                    relevance_score: 1
-                }))
-            setResults(localResults)
+            console.error('Search failed:', err)
+            setResults([])
         } finally {
             setLoading(false)
         }
-    }, [searchQuery, videos, recentSearches])
-
-    // Trigger search on query change (debounced)
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (searchQuery.length >= 2) {
-                performSearch()
-            } else if (searchQuery.length === 0) {
-                setResults([])
-            }
-        }, 300)
-
-        return () => clearTimeout(timer)
-    }, [searchQuery])
-
-    const handleRecentClick = (query) => {
-        setSearchQuery(query)
     }
 
-    const clearRecentSearches = () => {
-        setRecentSearches([])
-        localStorage.removeItem('recentSearches')
-    }
+    const localSearch = searchQuery.trim() === '' 
+        ? [] 
+        : videos.filter(v => 
+            v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (v.transcript && v.transcript.toLowerCase().includes(searchQuery.toLowerCase()))
+        )
 
-    const formatTimestamp = (seconds) => {
-        const mins = Math.floor(seconds / 60)
-        const secs = seconds % 60
-        return `${mins}:${secs.toString().padStart(2, '0')}`
-    }
+    const displayResults = results.length > 0 ? results : localSearch
 
     return (
-        <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
-            <Header
-                title="Search"
-                icon={{ name: 'search', bg: 'bg-primary/10', color: 'text-primary' }}
-            />
-
-            {/* Search Bar Section */}
-            <div className="glass sticky top-[72px] z-10 transition-all border-none">
-                <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4 lg:py-6">
-                    <div className="flex items-center gap-4 max-w-3xl">
-                        <label className="flex flex-col h-12 lg:h-14 w-full">
-                            <div className="flex w-full flex-1 items-stretch rounded-xl h-full border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                                <div className="text-[#4c739a] dark:text-gray-400 flex bg-[#e7edf3] dark:bg-slate-800 items-center justify-center pl-4 lg:pl-5">
-                                    <span className="material-symbols-outlined text-xl">search</span>
-                                </div>
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-xl text-[#0d141b] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border-none bg-[#e7edf3] dark:bg-slate-800 h-full placeholder:text-[#4c739a] dark:placeholder:text-gray-400 px-4 pl-3 text-base font-normal leading-normal"
-                                    placeholder="Search videos, transcripts, notes..."
-                                />
-                                {searchQuery && (
-                                    <button
-                                        onClick={() => setSearchQuery('')}
-                                        className="px-3 bg-[#e7edf3] text-gray-400 hover:text-gray-600"
-                                    >
-                                        <span className="material-symbols-outlined">close</span>
-                                    </button>
-                                )}
-                            </div>
-                        </label>
-                        <button
-                            onClick={performSearch}
-                            className="hidden lg:flex items-center gap-2 px-6 py-3.5 rounded-xl bg-primary text-white font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
-                        >
-                            <span className="material-symbols-outlined">search</span>
-                            Search
-                        </button>
-                    </div>
-
-                    {/* Quick Filters */}
-                    <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-                        {filters.map((filter) => (
-                            <button
-                                key={filter}
-                                onClick={() => setActiveFilter(filter)}
-                                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === filter
-                                    ? 'bg-primary text-white'
-                                    : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
-                                    }`}
-                            >
-                                {filter}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </div>
+        <div style={{ minHeight: '100vh', display: 'flex', background: 'var(--bg)' }}>
+            <Sidebar />
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-4 lg:px-8 py-6 pb-24 md:pb-10">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Results */}
-                    <div className="lg:col-span-2">
-                        {loading ? (
-                            <PageLoader text="Searching..." />
-                        ) : error ? (
-                            <ErrorMessage message={error} onRetry={performSearch} />
-                        ) : searchQuery && results.length === 0 ? (
-                            <EmptyState
-                                icon="search_off"
-                                title="No results found"
-                                message={`We couldn't find anything for "${searchQuery}"`}
+            <main className="main-content" style={{ flex: 1, paddingBottom: '80px', position: 'relative' }}>
+                <div className="page-container" style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+                    {/* Header */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="page-header" 
+                        style={{ marginBottom: '2.5rem' }}
+                    >
+                        <h1 style={{ fontSize: '3rem', fontWeight: 800, color: 'var(--text)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span>🕵️</span> Super Search
+                        </h1>
+                        <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                            Find any video or topic across the entire StudyaVerse!
+                        </p>
+                    </motion.div>
+
+                    {/* Search Bar */}
+                    <form onSubmit={handleSearch} style={{ marginBottom: '2.5rem' }}>
+                        <div className="search-bar glass-card" style={{ maxWidth: 800, borderRadius: '24px', display: 'flex', padding: '1rem 1.5rem', border: '2px solid rgba(139, 92, 246, 0.2)' }}>
+                            <span style={{ fontSize: '1.8rem' }}>🔍</span>
+                            <input 
+                                type="text" 
+                                placeholder="What do you want to learn today?..." 
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                autoFocus
+                                style={{ border: 'none', background: 'transparent', outline: 'none', flex: 1, marginLeft: '1rem', fontSize: '1.2rem', color: 'var(--text)' }}
                             />
-                        ) : results.length > 0 ? (
-                            <div className="space-y-4">
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                                    Found {results.length} result{results.length !== 1 ? 's' : ''} for "{searchQuery}"
-                                </p>
-
-                                {results.map((result, index) => (
-                                    <motion.div
-                                        key={index}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.05 }}
-                                    >
-                                        <Link
-                                            to={`/player/${result.video_id}`}
-                                            className="flex flex-col md:flex-row gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all group"
-                                        >
-                                            <div className="w-full md:w-48 lg:w-56 aspect-video bg-gray-200 dark:bg-slate-700 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden group-hover:shadow-glow transition-all duration-500">
-                                                <span className="material-symbols-outlined text-gray-400 text-4xl group-hover:scale-110 transition-transform duration-500">smart_display</span>
-                                            </div>
-                                            <div className="flex flex-col justify-center gap-2 flex-1">
-                                                <h3 className="font-semibold text-[#0d141b] dark:text-white group-hover:text-primary transition-colors">{result.video_title}</h3>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{result.text}</p>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    {result.timestamp_start > 0 && (
-                                                        <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full font-medium">
-                                                            {formatTimestamp(result.timestamp_start)} - {formatTimestamp(result.timestamp_end)}
-                                                        </span>
-                                                    )}
-                                                    <span className="text-xs text-gray-400">
-                                                        {Math.round(result.relevance_score * 100)}% match
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    </motion.div>
-                                ))}
-                            </div>
-                        ) : (
-                            // No search yet - show recent videos
-                            <div>
-                                <h3 className="text-lg font-semibold mb-4 dark:text-white">Recent Videos</h3>
-                                {videos.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {videos.slice(0, 4).map((video) => (
-                                            <VideoCard key={video.id} video={video} variant="list" />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <EmptyState
-                                        icon="video_library"
-                                        title="No videos yet"
-                                        message="Process your first video to start searching"
-                                    />
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Sidebar - Recent & Suggestions */}
-                    <div className="hidden lg:block space-y-6">
-                        {/* Recent Searches */}
-                        {recentSearches.length > 0 && (
-                            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-100 dark:border-slate-700 shadow-sm">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-lg font-bold dark:text-white">Recent Searches</h3>
-                                    <button
-                                        onClick={clearRecentSearches}
-                                        className="text-xs text-gray-400 hover:text-gray-600"
-                                    >
-                                        Clear
-                                    </button>
-                                </div>
-                                <div className="space-y-2">
-                                    {recentSearches.map((query, index) => (
-                                        <button
-                                            key={index}
-                                            onClick={() => handleRecentClick(query)}
-                                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 w-full text-left"
-                                        >
-                                            <span className="material-symbols-outlined text-gray-400">history</span>
-                                            <span className="text-sm text-gray-700 truncate">{query}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Suggested Topics */}
-                        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-                            <h3 className="text-lg font-bold mb-4">Popular Topics</h3>
-                            <div className="flex flex-wrap gap-2">
-                                {['Machine Learning', 'React', 'Python', 'Data Science', 'Web Dev'].map((topic) => (
-                                    <button
-                                        key={topic}
-                                        onClick={() => setSearchQuery(topic)}
-                                        className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
-                                    >
-                                        {topic}
-                                    </button>
-                                ))}
-                            </div>
+                            <motion.button 
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                type="submit" 
+                                className="btn btn-primary" 
+                                disabled={loading}
+                                style={{
+                                    borderRadius: '100px', 
+                                    padding: '0.75rem 2rem', 
+                                    fontSize: '1.1rem',
+                                    fontWeight: 700,
+                                    background: 'linear-gradient(135deg, #137fec 0%, #8b5cf6 100%)',
+                                    border: 'none',
+                                    color: 'white',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {loading ? <div className="app-loading" style={{ width: 20, height: 20 }}></div> : 'Search!'}
+                            </motion.button>
                         </div>
-                    </div>
-                </div>
-            </div>
+                    </form>
 
-            {/* Mobile Bottom Nav */}
-            <div className="md:hidden">
-                <BottomNavSearch />
-            </div>
+                    {/* Results */}
+                    {loading ? (
+                        <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
+                            <div className="app-loading"></div>
+                        </div>
+                    ) : !searched ? (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="glass-card" 
+                            style={{ textAlign: 'center', padding: '4rem 2rem', borderRadius: '32px' }}
+                        >
+                            <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>🔎</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>Ready to explore?</div>
+                            <p style={{ color: 'var(--text-secondary)' }}>Type a keyword above and hit Search!</p>
+                        </motion.div>
+                    ) : displayResults.length === 0 ? (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="glass-card" 
+                            style={{ textAlign: 'center', padding: '4rem 2rem', borderRadius: '32px' }}
+                        >
+                            <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>👽</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>Nothing found in this galaxy!</div>
+                            <p style={{ color: 'var(--text-secondary)' }}>Try different keywords or check out something else.</p>
+                        </motion.div>
+                    ) : (
+                        <motion.div layout>
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '1.1rem', fontWeight: 500 }}>
+                                🎯 Found {displayResults.length} awesome match{displayResults.length !== 1 ? 'es' : ''}!
+                            </p>
+                            <motion.div layout className="grid-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '2rem' }}>
+                                <AnimatePresence>
+                                    {displayResults.map(video => (
+                                        <motion.div 
+                                            layout
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.9 }}
+                                            whileHover={{ scale: 1.03, y: -5 }}
+                                            key={video.id} 
+                                            className="glass-card" 
+                                            style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden' }}
+                                        >
+                                            <Link to={`/player/${video.id}`} style={{ textDecoration: 'none' }}>
+                                                <div style={{ aspectRatio: '16/9', background: 'var(--surface-hover)', position: 'relative' }}>
+                                                    {video.thumbnail_url ? (
+                                                        <img src={video.thumbnail_url} alt={video.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    ) : (
+                                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            <span style={{ fontSize: '3rem' }}>▶️</span>
+                                                        </div>
+                                                    )}
+                                                    <div style={{ 
+                                                        position: 'absolute', 
+                                                        top: 8, 
+                                                        left: 8,
+                                                        background: video.source_type === 'youtube' ? 'rgba(255,0,0,0.9)' : 'var(--primary)',
+                                                        color: 'white',
+                                                        padding: '4px 12px',
+                                                        borderRadius: '100px',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: 700,
+                                                        boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                                                    }}>
+                                                        {video.source_type === 'youtube' ? '🔴 YT' : '📁 FILE'}
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                            <div style={{ padding: '1.25rem' }}>
+                                                <Link to={`/player/${video.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                                                    <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.75rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{video.title}</div>
+                                                </Link>
+                                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.75rem' }}>
+                                                    {new Date(video.created_at).toLocaleDateString()}
+                                                </div>
+                                                {video.transcript && (
+                                                    <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', fontSize: '0.85rem', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontStyle: 'italic' }}>
+                                                        "{video.transcript}"
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </div>
+            </main>
         </div>
     )
 }

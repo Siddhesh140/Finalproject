@@ -1,4 +1,5 @@
 export { default as Header } from './Header'
+export { default as Sidebar } from './Sidebar'
 export { default as VideoCard } from './VideoCard'
 export { default as LoadingSpinner, PageLoader, ButtonLoader } from './LoadingSpinner'
 export { default as ErrorMessage, EmptyState } from './ErrorMessage'
@@ -7,4 +8,3 @@ export { default as BottomNavDashboard } from './BottomNavDashboard'
 export { default as BottomNavLibrary } from './BottomNavLibrary'
 export { default as BottomNavSearch } from './BottomNavSearch'
 export { default as ConfirmModal } from './ConfirmModal'
-

@@ -3,12 +3,17 @@ Video Processing Service
 Simplified version that works for YouTube embeds and demo purposes
 """
 import re
+import asyncio
+import logging
 from sqlalchemy.orm import Session
 from ..database import SessionLocal
 from ..models import Video, VideoStatus
 from ..config import get_settings
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
+
+TASK_TIMEOUT_SECONDS = 300
 
 
 def extract_youtube_id(url: str) -> str:
@@ -30,13 +35,30 @@ async def get_youtube_info(url: str) -> dict:
     if not video_id:
         return {"title": "Unknown Video", "duration": 0}
     
-    # For demo: use video ID as title, estimate duration
-    # In production, you'd use YouTube Data API
     return {
         "title": f"YouTube Video - {video_id}",
-        "duration": 300,  # Default 5 min estimate
+        "duration": 300,
         "youtube_id": video_id
     }
+
+
+def _update_video_status(db: Session, video: Video, status: VideoStatus, progress: int, 
+                         title: str = None, duration: int = None, transcript: str = None,
+                         error_message: str = None):
+    """Batch update video fields and commit"""
+    if status:
+        video.status = status
+    if progress is not None:
+        video.progress = progress
+    if title is not None:
+        video.title = title
+    if duration is not None:
+        video.duration = duration
+    if transcript is not None:
+        video.transcript = transcript
+    if error_message is not None:
+        video.error_message = error_message
+    db.commit()
 
 
 async def process_video_task(video_id: str, source: str, is_local: bool = False):
@@ -46,64 +68,67 @@ async def process_video_task(video_id: str, source: str, is_local: bool = False)
     2. For uploads: Use existing file path
     3. Create embeddings if transcript available
     """
+    try:
+        async with asyncio.timeout(TASK_TIMEOUT_SECONDS):
+            await _process_video_internal(video_id, source, is_local)
+    except asyncio.TimeoutError:
+        logger.error("Video %s processing timed out after %ds", video_id, TASK_TIMEOUT_SECONDS)
+        _mark_video_failed(video_id, "Processing timed out")
+    except Exception as e:
+        logger.error("Error processing video %s: %s", video_id, str(e))
+        _mark_video_failed(video_id, str(e))
+
+
+async def _process_video_internal(video_id: str, source: str, is_local: bool = False):
+    """Internal processing logic with batched commits"""
     db = SessionLocal()
     
     try:
-        # Update status to processing
         video = db.query(Video).filter(Video.id == video_id).first()
         if not video:
+            logger.warning("Video %s not found for processing", video_id)
             return
         
-        video.status = VideoStatus.PROCESSING
-        video.progress = 10
-        db.commit()
+        _update_video_status(db, video, VideoStatus.PROCESSING, 10)
+        logger.info("Started processing video %s", video_id)
         
+        transcript = None
         if not is_local:
-            # YouTube video - get info and use demo transcript
             info = await get_youtube_info(source)
-            video.title = info.get("title", "Untitled Video")
-            video.duration = info.get("duration", 0)
-            
-            # Update progress
-            video.progress = 30
-            db.commit()
-            
-            # Demo transcript for YouTube videos
-            # In production, you'd use Whisper API or YouTube captions
-            video.transcript = generate_demo_transcript(video.title)
+            _update_video_status(db, video, None, 30, 
+                                  title=info.get("title", "Untitled Video"),
+                                  duration=info.get("duration", 0))
+            transcript = generate_demo_transcript(video.title)
         else:
-            # Local file - already have file path
-            video.duration = 300  # Default duration
+            _update_video_status(db, video, None, 30, duration=300)
             if not video.transcript:
-                video.transcript = generate_demo_transcript(video.title or "Uploaded Video")
+                transcript = generate_demo_transcript(video.title or "Uploaded Video")
         
-        # Update progress
-        video.progress = 60
-        db.commit()
+        if transcript:
+            _update_video_status(db, video, None, 60, transcript=transcript)
+            
+            try:
+                await create_embeddings(video_id, transcript)
+            except Exception as e:
+                logger.warning("Embedding creation failed for video %s: %s", video_id, str(e))
         
-        # Create embeddings for RAG
-        if video.transcript:
-            await create_embeddings(video_id, video.transcript)
+        _update_video_status(db, video, VideoStatus.COMPLETED, 100)
+        logger.info("Video %s processed successfully", video_id)
         
-        # Update progress
-        video.progress = 90
-        db.commit()
-        
-        # Mark as completed
-        video.status = VideoStatus.COMPLETED
-        video.progress = 100
-        db.commit()
-        
-        print(f"✅ Video {video_id} processed successfully!")
-        
-    except Exception as e:
-        print(f"❌ Error processing video {video_id}: {e}")
-        # Mark as failed
+    finally:
+        db.close()
+
+
+def _mark_video_failed(video_id: str, error_message: str):
+    """Mark video as failed"""
+    db = SessionLocal()
+    try:
         video = db.query(Video).filter(Video.id == video_id).first()
         if video:
             video.status = VideoStatus.FAILED
-            video.error_message = str(e)
+            video.error_message = error_message
             db.commit()
+            logger.error("Video %s marked as failed: %s", video_id, error_message)
     finally:
         db.close()
 
@@ -150,7 +175,6 @@ async def create_embeddings(video_id: str, transcript: str):
     try:
         from .rag_service import add_video_to_index
         await add_video_to_index(video_id, transcript)
-        print(f"✅ Embeddings created for video {video_id}")
+        logger.info("Embeddings created for video %s", video_id)
     except Exception as e:
-        print(f"⚠️ Could not create embeddings: {e}")
-        # Don't fail the whole process if embeddings fail
+        logger.warning("Could not create embeddings for video %s: %s", video_id, str(e))

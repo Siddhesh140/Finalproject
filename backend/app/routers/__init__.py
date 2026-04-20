@@ -3,6 +3,7 @@ from .chat import router as chat_router
 from .quiz import router as quiz_router
 from .search import router as search_router
 from .notes import router as notes_router
+from .auth import router as auth_router
 
 __all__ = [
     "videos_router",
@@ -10,5 +11,6 @@ __all__ = [
     "quiz_router",
     "search_router",
     "notes_router",
+    "auth_router",
 ]
 

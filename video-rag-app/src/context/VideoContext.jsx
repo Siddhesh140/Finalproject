@@ -1,16 +1,14 @@
-import { createContext, useContext, useReducer, useCallback, useEffect } from 'react'
+import { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react'
 import { videoAPI } from '../services/api'
 
-// Initial state
 const initialState = {
     videos: [],
     currentVideo: null,
     loading: false,
     error: null,
-    processingVideos: [], // Videos currently being processed
+    processingVideos: [],
 }
 
-// Action types
 const ACTIONS = {
     SET_LOADING: 'SET_LOADING',
     SET_ERROR: 'SET_ERROR',
@@ -23,21 +21,16 @@ const ACTIONS = {
     REMOVE_PROCESSING: 'REMOVE_PROCESSING',
 }
 
-// Reducer
 function videoReducer(state, action) {
     switch (action.type) {
         case ACTIONS.SET_LOADING:
             return { ...state, loading: action.payload }
-
         case ACTIONS.SET_ERROR:
             return { ...state, error: action.payload, loading: false }
-
         case ACTIONS.SET_VIDEOS:
             return { ...state, videos: action.payload, loading: false }
-
         case ACTIONS.ADD_VIDEO:
             return { ...state, videos: [action.payload, ...state.videos] }
-
         case ACTIONS.UPDATE_VIDEO:
             return {
                 ...state,
@@ -45,41 +38,39 @@ function videoReducer(state, action) {
                     v.id === action.payload.id ? { ...v, ...action.payload } : v
                 ),
             }
-
         case ACTIONS.DELETE_VIDEO:
             return {
                 ...state,
                 videos: state.videos.filter(v => v.id !== action.payload),
             }
-
         case ACTIONS.SET_CURRENT_VIDEO:
             return { ...state, currentVideo: action.payload }
-
         case ACTIONS.ADD_PROCESSING:
             return {
                 ...state,
                 processingVideos: [...state.processingVideos, action.payload]
             }
-
         case ACTIONS.REMOVE_PROCESSING:
             return {
                 ...state,
                 processingVideos: state.processingVideos.filter(id => id !== action.payload)
             }
-
         default:
             return state
     }
 }
 
-// Create Context
 const VideoContext = createContext(null)
 
-// Provider Component
+const INITIAL_POLL_INTERVAL = 2000
+const MAX_POLL_INTERVAL = 30000
+const BACKOFF_MULTIPLIER = 1.5
+
 export function VideoProvider({ children }) {
     const [state, dispatch] = useReducer(videoReducer, initialState)
+    const pollIntervalsRef = useRef(new Map())
+    const currentIntervalsRef = useRef(new Map())
 
-    // Fetch all videos
     const fetchVideos = useCallback(async () => {
         dispatch({ type: ACTIONS.SET_LOADING, payload: true })
         try {
@@ -90,7 +81,6 @@ export function VideoProvider({ children }) {
         }
     }, [])
 
-    // Process video from URL
     const processVideoUrl = useCallback(async (url, title) => {
         dispatch({ type: ACTIONS.SET_LOADING, payload: true })
         try {
@@ -104,7 +94,6 @@ export function VideoProvider({ children }) {
         }
     }, [])
 
-    // Upload video file
     const uploadVideo = useCallback(async (file, title) => {
         dispatch({ type: ACTIONS.SET_LOADING, payload: true })
         try {
@@ -118,7 +107,6 @@ export function VideoProvider({ children }) {
         }
     }, [])
 
-    // Delete video
     const deleteVideo = useCallback(async (id) => {
         try {
             await videoAPI.delete(id)
@@ -129,37 +117,74 @@ export function VideoProvider({ children }) {
         }
     }, [])
 
-    // Set current video for player
     const setCurrentVideo = useCallback((video) => {
         dispatch({ type: ACTIONS.SET_CURRENT_VIDEO, payload: video })
     }, [])
 
-    // Check video processing status
     const checkProcessingStatus = useCallback(async (id) => {
         try {
             const status = await videoAPI.getStatus(id)
-            if (status.status === 'completed') {
+            if (status.status === 'completed' || status.status === 'failed') {
                 dispatch({ type: ACTIONS.REMOVE_PROCESSING, payload: id })
-                dispatch({ type: ACTIONS.UPDATE_VIDEO, payload: { id, ...status } })
             }
+            dispatch({ type: ACTIONS.UPDATE_VIDEO, payload: { id, ...status } })
             return status
         } catch (error) {
             console.error('Error checking status:', error)
+            return null
         }
     }, [])
 
-    // Poll for status updates
     useEffect(() => {
-        if (state.processingVideos.length === 0) return
+        state.processingVideos.forEach(id => {
+            if (!currentIntervalsRef.current.has(id)) {
+                currentIntervalsRef.current.set(id, INITIAL_POLL_INTERVAL)
+                const timeoutId = setTimeout(
+                    () => {
+                        const checkStatus = async () => {
+                            try {
+                                const status = await videoAPI.getStatus(id)
+                                if (status.status === 'completed' || status.status === 'failed') {
+                                    dispatch({ type: ACTIONS.REMOVE_PROCESSING, payload: id })
+                                    dispatch({ type: ACTIONS.UPDATE_VIDEO, payload: { id, ...status } })
+                                    
+                                    if (pollIntervalsRef.current.has(id)) {
+                                        clearTimeout(pollIntervalsRef.current.get(id))
+                                        pollIntervalsRef.current.delete(id)
+                                    }
+                                    currentIntervalsRef.current.delete(id)
+                                } else {
+                                    dispatch({ type: ACTIONS.UPDATE_VIDEO, payload: { id, ...status } })
+                                    
+                                    const currentInterval = currentIntervalsRef.current.get(id) || INITIAL_POLL_INTERVAL
+                                    const nextInterval = Math.min(currentInterval * BACKOFF_MULTIPLIER, MAX_POLL_INTERVAL)
+                                    currentIntervalsRef.current.set(id, nextInterval)
+                                    
+                                    if (pollIntervalsRef.current.has(id)) {
+                                        clearTimeout(pollIntervalsRef.current.get(id))
+                                    }
+                                    
+                                    const newTimeoutId = setTimeout(checkStatus, nextInterval)
+                                    pollIntervalsRef.current.set(id, newTimeoutId)
+                                }
+                            } catch (error) {
+                                console.error('Error checking status:', error)
+                            }
+                        }
+                        checkStatus()
+                    },
+                    INITIAL_POLL_INTERVAL
+                )
+                pollIntervalsRef.current.set(id, timeoutId)
+            }
+        })
 
-        const interval = setInterval(() => {
-            state.processingVideos.forEach(id => {
-                checkProcessingStatus(id)
-            })
-        }, 2000)
-
-        return () => clearInterval(interval)
-    }, [state.processingVideos, checkProcessingStatus])
+        return () => {
+            pollIntervalsRef.current.forEach(timeoutId => clearTimeout(timeoutId))
+            pollIntervalsRef.current.clear()
+            currentIntervalsRef.current.clear()
+        }
+    }, [state.processingVideos])
 
     const value = {
         ...state,
@@ -178,7 +203,6 @@ export function VideoProvider({ children }) {
     )
 }
 
-// Custom hook to use context
 export function useVideos() {
     const context = useContext(VideoContext)
     if (!context) {

@@ -1,12 +1,50 @@
-// API Configuration
+// @ts-check
+
+/** @type {string} */
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
-// Store for active abort controllers
 const activeRequests = new Map()
 
-// Helper to create a cancellable request
+const DEFAULT_RETRY_CONFIG = {
+    maxRetries: 3,
+    initialDelay: 500,
+    maxDelay: 5000,
+    backoffMultiplier: 2,
+    retryableStatuses: [408, 429, 500, 502, 503, 504],
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function withRetry(fn, config = {}) {
+    const { maxRetries, initialDelay, maxDelay, backoffMultiplier, retryableStatuses } = {
+        ...DEFAULT_RETRY_CONFIG,
+        ...config,
+    }
+    
+    let lastError
+    let delay = initialDelay
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            return await fn()
+        } catch (error) {
+            lastError = error
+            
+            if (attempt === maxRetries) break
+            if (error.name === 'AbortError') throw error
+            if (!retryableStatuses.includes(error.status)) throw error
+            
+            await sleep(delay)
+            delay = Math.min(delay * backoffMultiplier, maxDelay)
+        }
+    }
+    
+    throw lastError
+}
+
 export function createCancellableRequest(key) {
-    // Cancel any existing request with the same key
     if (activeRequests.has(key)) {
         activeRequests.get(key).abort()
     }
@@ -15,7 +53,6 @@ export function createCancellableRequest(key) {
     return controller
 }
 
-// Helper to cancel a request by key
 export function cancelRequest(key) {
     if (activeRequests.has(key)) {
         activeRequests.get(key).abort()
@@ -23,40 +60,44 @@ export function cancelRequest(key) {
     }
 }
 
-// Helper function for API calls with optional AbortSignal
 async function apiCall(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`
 
+    const token = localStorage.getItem('token')
+    
     const config = {
         headers: {
             'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
             ...options.headers,
         },
         ...options,
     }
 
-    // Remove Content-Type for FormData (file uploads)
     if (options.body instanceof FormData) {
         delete config.headers['Content-Type']
     }
 
-    try {
+    const shouldRetry = options.retry !== false
+    const retryConfig = options.retryConfig || {}
+
+    const fetchFn = async () => {
         const response = await fetch(url, config)
 
         if (!response.ok) {
             const error = await response.json().catch(() => ({ message: 'Request failed' }))
-            throw new Error(error.message || `HTTP ${response.status}`)
+            const err = new Error(error.message || `HTTP ${response.status}`)
+            err.status = response.status
+            throw err
         }
 
         return await response.json()
-    } catch (error) {
-        // Don't log abort errors as they're intentional
-        if (error.name === 'AbortError') {
-            throw error
-        }
-        console.error(`API Error [${endpoint}]:`, error)
-        throw error
     }
+
+    if (shouldRetry) {
+        return withRetry(fetchFn, retryConfig)
+    }
+    return fetchFn()
 }
 
 // ============================================
@@ -170,9 +211,49 @@ export const searchAPI = {
     suggestions: (query) => apiCall(`/search/suggestions?q=${encodeURIComponent(query)}`),
 }
 
+// ============================================
+// AUTH API
+// ============================================
+
+function getAuthToken() {
+    return localStorage.getItem('token')
+}
+
+function setAuthToken(token) {
+    localStorage.setItem('token', token)
+}
+
+function removeAuthToken() {
+    localStorage.removeItem('token')
+}
+
+export const authAPI = {
+    signup: (userData) => apiCall('/signup', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+    }),
+
+    login: (credentials) => apiCall('/login', {
+        method: 'POST',
+        body: JSON.stringify(credentials),
+    }),
+
+    logout: () => {
+        removeAuthToken()
+        return Promise.resolve({ message: 'Logged out' })
+    },
+
+    getCurrentUser: () => apiCall('/me'),
+
+    getToken: getAuthToken,
+    setToken: setAuthToken,
+    removeToken: removeAuthToken,
+}
+
 export default {
     video: videoAPI,
     chat: chatAPI,
     quiz: quizAPI,
     search: searchAPI,
+    auth: authAPI,
 }

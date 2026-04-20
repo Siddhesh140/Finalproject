@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Text, DateTime, Enum, Boolean
+from sqlalchemy import Column, String, Integer, Text, DateTime, Enum, Boolean, Index
 from sqlalchemy.sql import func
 from ..database import Base
 import uuid
@@ -19,20 +19,25 @@ class VideoSource(str, enum.Enum):
 
 class Video(Base):
     __tablename__ = "videos"
+    __table_args__ = (
+        Index('idx_video_status', 'status'),
+        Index('idx_video_created_at', 'created_at'),
+        Index('idx_video_source_type', 'source_type'),
+    )
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title = Column(String(255), nullable=False)
-    source_type = Column(String(20), default=VideoSource.UPLOAD)
+    source_type = Column(String(20), default=VideoSource.UPLOAD, index=True)
     source_url = Column(Text, nullable=True)
     file_path = Column(Text, nullable=True)
-    duration = Column(Integer, nullable=True)  # seconds
+    duration = Column(Integer, nullable=True)
     thumbnail_url = Column(Text, nullable=True)
-    status = Column(String(20), default=VideoStatus.PENDING)
+    status = Column(String(20), default=VideoStatus.PENDING, index=True)
     progress = Column(Integer, default=0)
     is_liked = Column(Boolean, default=False)
     transcript = Column(Text, nullable=True)
     error_message = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     def to_dict(self):

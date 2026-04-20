@@ -4,15 +4,16 @@ const ThemeContext = createContext(null)
 
 export function ThemeProvider({ children }) {
     const [isDarkMode, setIsDarkMode] = useState(() => {
-        // Check localStorage or system preference
+        // Check localStorage or default to dark (cosmic theme)
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('darkMode')
             if (saved !== null) {
                 return JSON.parse(saved)
             }
-            return window.matchMedia('(prefers-color-scheme: dark)').matches
+            // Default to dark mode for cosmic theme
+            return true
         }
-        return false
+        return true
     })
 
     useEffect(() => {

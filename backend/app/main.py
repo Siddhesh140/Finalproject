@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -8,15 +9,18 @@ from slowapi.errors import RateLimitExceeded
 
 from .config import get_settings
 from .database import engine, Base
-from .routers import videos_router, chat_router, quiz_router, search_router, notes_router
+from .routers import videos_router, chat_router, quiz_router, search_router, notes_router, auth_router
 
-# Create database tables
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 Base.metadata.create_all(bind=engine)
 
-# Get settings
 settings = get_settings()
 
-# Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
 
 # Create FastAPI app
@@ -53,6 +57,7 @@ app.include_router(chat_router, prefix="/api")
 app.include_router(quiz_router, prefix="/api")
 app.include_router(search_router, prefix="/api")
 app.include_router(notes_router, prefix="/api")
+app.include_router(auth_router, prefix="/api")
 
 
 # ============================================
@@ -62,6 +67,7 @@ app.include_router(notes_router, prefix="/api")
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Handle validation errors with clean response"""
+    logger.warning("Validation error on %s: %s", request.url.path, exc.errors())
     return JSONResponse(
         status_code=422,
         content={
@@ -75,10 +81,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Catch-all exception handler for unexpected errors"""
-    # Log the error (in production, use proper logging)
-    print(f"Unhandled exception: {exc}")
+    logger.exception("Unhandled exception on %s: %s", request.url.path, str(exc))
     
-    # Don't expose internal details in production
     if settings.debug:
         detail = str(exc)
     else:

@@ -36,10 +36,10 @@ export default function VideoCard({ video, variant = 'grid' }) {
 
     const getStatusBadge = (status) => {
         const styles = {
-            completed: 'bg-green-100 text-green-700',
-            processing: 'bg-yellow-100 text-yellow-700',
-            pending: 'bg-gray-100 text-gray-600',
-            failed: 'bg-red-100 text-red-700',
+            completed: 'bg-secondary/10 text-secondary border border-secondary/20 shadow-[0_0_10px_rgba(23,222,202,0.2)]',
+            processing: 'bg-tertiary/10 text-tertiary border border-tertiary/20 animate-pulse shadow-[0_0_10px_rgba(255,197,99,0.2)]',
+            pending: 'bg-outline-variant-light dark:bg-white/5 text-on-surface-variant-light dark:text-on-surface-variant-dark border border-outline-light dark:border-white/10',
+            failed: 'bg-error-container text-error border border-error/20',
         }
         return styles[status] || styles.pending
     }
@@ -48,10 +48,10 @@ export default function VideoCard({ video, variant = 'grid' }) {
         return (
             <Link
                 to={`/player/${video.id}`}
-                className="flex gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all"
+                className="flex gap-4 p-3 glass-card glass-card-hover rounded-xl cursor-pointer"
             >
                 {/* Thumbnail */}
-                <div className="w-32 h-20 lg:w-40 lg:h-24 rounded-lg bg-gray-200 dark:bg-slate-700 overflow-hidden flex-shrink-0 relative">
+                <div className="w-32 h-20 lg:w-40 lg:h-24 rounded-lg bg-surface-variant-light dark:bg-[#0A0E1A] border border-outline-variant-light dark:border-white/5 overflow-hidden flex-shrink-0 relative">
                     {video.thumbnail_url ? (
                         <img
                             src={video.thumbnail_url}
@@ -59,31 +59,31 @@ export default function VideoCard({ video, variant = 'grid' }) {
                             className="w-full h-full object-cover"
                         />
                     ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-gray-400 text-3xl">smart_display</span>
+                        <div className="w-full h-full flex items-center justify-center">
+                            <span className="material-symbols-outlined text-outline-light dark:text-outline-dark text-3xl">smart_display</span>
                         </div>
                     )}
                     {video.duration && (
-                        <span className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                        <span className="absolute bottom-1 right-1 bg-black/70 backdrop-blur-md text-white text-xs px-1.5 py-0.5 rounded font-body">
                             {formatDuration(video.duration)}
                         </span>
                     )}
                 </div>
 
                 {/* Info */}
-                <div className="flex-1 flex flex-col justify-center gap-1 min-w-0 overflow-hidden">
-                    <h3 className="font-semibold text-[#0d141b] dark:text-white truncate">{video.title}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex-1 flex flex-col justify-center gap-1.5 min-w-0 overflow-hidden">
+                    <h3 className="font-semibold text-on-surface-light dark:text-white truncate" title={video.title}>{video.title}</h3>
+                    <p className="text-xs text-on-surface-variant-light dark:text-on-surface-variant-dark font-body uppercase tracking-wider">
                         {video.source_type === 'youtube' ? 'YouTube' : 'Upload'}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusBadge(video.status)}`}>
+                        <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${getStatusBadge(video.status)}`}>
                             {video.status}
                         </span>
                         {video.status === 'processing' && (
-                            <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden ml-2">
+                            <div className="flex-1 max-w-[100px] h-1.5 bg-background-light dark:bg-black/50 rounded-full overflow-hidden ml-2 border border-outline-variant-light dark:border-white/5">
                                 <div
-                                    className="h-full bg-primary transition-all duration-500"
+                                    className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-500"
                                     style={{ width: `${video.progress || 0}%` }}
                                 />
                             </div>
@@ -98,10 +98,10 @@ export default function VideoCard({ video, variant = 'grid' }) {
     return (
         <Link
             to={`/player/${video.id}`}
-            className="group relative flex flex-col gap-3 bg-white dark:bg-slate-800 rounded-xl p-3 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+            className="group relative flex flex-col gap-3 glass-card glass-card-hover p-3 cursor-pointer"
         >
             {/* Thumbnail */}
-            <div className="w-full aspect-video rounded-lg bg-gray-200 dark:bg-slate-700 overflow-hidden relative group-hover:shadow-glow transition-all duration-300">
+            <div className="w-full aspect-video rounded-lg bg-surface-variant-light dark:bg-[#0A0E1A] overflow-hidden relative transition-all duration-300">
                 {video.thumbnail_url ? (
                     <img
                         src={video.thumbnail_url}
@@ -109,61 +109,55 @@ export default function VideoCard({ video, variant = 'grid' }) {
                         className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                     />
                 ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-gray-300 text-4xl group-hover:text-primary/50 transition-colors">smart_display</span>
+                    <div className="w-full h-full flex items-center justify-center">
+                        <span className="material-symbols-outlined text-outline-light dark:text-outline-dark text-4xl group-hover:text-primary transition-colors">smart_display</span>
                     </div>
                 )}
 
                 {/* Duration badge */}
                 {video.duration && (
-                    <span className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded border border-white/10">
+                    <span className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md text-white font-body text-[10px] font-medium px-1.5 py-0.5 rounded border border-white/10">
                         {formatDuration(video.duration)}
                     </span>
                 )}
 
-                {/* Status badge */}
-                {video.status !== 'completed' && (
-                    <span className={`absolute top-2 right-2 text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/20 backdrop-blur-md ${getStatusBadge(video.status)}`}>
-                        {video.status}
-                    </span>
-                )}
-
                 {/* Play overlay */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/10 backdrop-blur-[1px]">
-                    <div className="bg-white/90 rounded-full p-2.5 shadow-lg transform scale-50 group-hover:scale-100 transition-transform duration-300">
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/10 backdrop-blur-[2px]">
+                    <div className="bg-white rounded-full p-2.5 shadow-cosmic transform scale-50 group-hover:scale-100 transition-transform duration-300">
                         <span className="material-symbols-outlined text-primary text-2xl fill-icon">play_arrow</span>
                     </div>
                 </div>
             </div>
 
+            {/* Status badge - Floating top left */}
+            {video.status !== 'completed' && (
+                <span className={`absolute top-5 left-5 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full z-10 ${getStatusBadge(video.status)}`}>
+                    {video.status}
+                </span>
+            )}
+
             {/* Three Dots Menu - Grid */}
-            <div className="absolute top-3 right-3 z-10">
+            <div className="absolute top-5 right-5 z-20">
                 <button
                     onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
                         setShowMenu(!showMenu)
                     }}
-                    aria-label="Video options menu"
-                    aria-expanded={showMenu}
-                    aria-haspopup="menu"
-                    className="flex items-center justify-center size-8 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-black/60 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+                    className="flex items-center justify-center size-8 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-black/70 transition-colors focus:outline-none"
                 >
                     <span className="material-symbols-outlined text-lg" aria-hidden="true">more_vert</span>
                 </button>
 
                 {showMenu && (
                     <div
-                        role="menu"
-                        aria-label="Video actions"
-                        className="absolute right-0 top-full mt-2 w-32 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden z-20 animate-fade-in"
+                        className="absolute right-0 top-full mt-2 w-32 bg-surface-container-highest-light dark:bg-surface-container-highest-dark rounded-lg shadow-xl border border-outline-variant-light dark:border-white/10 overflow-hidden z-30 animate-fade-in"
                     >
                         <button
-                            role="menuitem"
                             onClick={handleDeleteClick}
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left focus:outline-none focus:bg-red-50"
+                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-error hover:bg-error/10 transition-colors font-semibold"
                         >
-                            <span className="material-symbols-outlined text-lg" aria-hidden="true">delete</span>
+                            <span className="material-symbols-outlined text-lg">delete</span>
                             Delete
                         </button>
                     </div>
@@ -172,24 +166,25 @@ export default function VideoCard({ video, variant = 'grid' }) {
 
             {/* Info */}
             <div className="flex flex-col gap-1 px-1">
-                <h3 className="font-semibold text-[#0d141b] dark:text-white line-clamp-2 text-sm group-hover:text-primary transition-colors">{video.title}</h3>
-                <div className="flex items-center justify-between">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide">
+                <h3 className="font-bold text-on-surface-light dark:text-white line-clamp-2 text-sm group-hover:text-primary transition-colors">{video.title}</h3>
+                <div className="flex items-center justify-between mt-0.5">
+                    <p className="text-xs text-on-surface-variant-light dark:text-outline-dark font-body uppercase tracking-wider font-semibold">
                         {video.source_type === 'youtube' ? 'YouTube' : 'Uploaded'}
                     </p>
                     {video.status === 'processing' && (
                         <div className="flex items-center gap-2 min-w-[30%]">
-                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="flex-1 h-1.5 bg-background-light dark:bg-black/50 rounded-full overflow-hidden border border-outline-variant-light dark:border-white/5">
                                 <div
-                                    className="h-full bg-primary transition-all duration-500"
+                                    className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-500"
                                     style={{ width: `${video.progress || 0}%` }}
                                 />
                             </div>
-                            <span className="text-[10px] text-gray-500 font-medium">{video.progress || 0}%</span>
+                            <span className="text-[10px] font-body text-primary-dim font-bold">{video.progress || 0}%</span>
                         </div>
                     )}
                 </div>
             </div>
+
             {/* Delete Confirmation Modal */}
             <ConfirmModal
                 isOpen={showDeleteModal}
@@ -217,4 +212,3 @@ VideoCard.propTypes = {
     }).isRequired,
     variant: PropTypes.oneOf(['grid', 'list']),
 }
-

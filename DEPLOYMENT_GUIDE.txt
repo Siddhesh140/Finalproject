@@ -1,0 +1,212 @@
+================================================================================
+                 DEPLOYMENT - WHAT'S MISSING & HOW TO FIX IT
+================================================================================
+
+This document outlines everything needed to make the project fully functional.
+
+================================================================================
+SECTION 1: CRITICAL - REQUIRED FOR AI FEATURES
+================================================================================
+
+You need an API key to enable AI features (transcription, RAG chat, quiz generation).
+
+---- STEP 1: Get Google Gemini API Key ----
+1. Go to: https://aistudio.google.com/app/apikey
+2. Click "Create API Key"
+3. Copy the key (starts with "AI...")
+
+---- STEP 2: Configure Environment ----
+1. Create a file at: backend/.env
+2. Add these contents:
+
+    # REQUIRED - Get from https://aistudio.google.com/app/apikey
+    GOOGLE_API_KEY=your_api_key_here
+    
+    # Optional settings
+    llm_provider=google
+    
+3. Restart the backend:
+   pkill -f uvicorn
+   cd backend && source .venv/bin/activate && uvicorn app.main:app --reload --port 8000
+
+---- VERIFY ----
+Test the backend health:
+curl http://localhost:8000/health
+
+If you see "No valid AI API key" warning, the key isn't set correctly.
+
+================================================================================
+SECTION 2: DATABASE - RUN MIGRATIONS
+================================================================================
+
+The database tables need to be created for productiondeployment.
+
+---- STEP 1: Check Current Database ----
+The project currently uses SQLite with auto-creation. For production:
+
+1. Database file location: backend/videorag.db
+2. Vector database: backend/chroma_db/
+
+---- STEP 2: Verify Tables Exist (Optional) ----
+cd backend
+source .venv/bin/activate
+python -c "
+from app.database import engine
+from app.models import Video, User, ChatMessage, Quiz, QuizAttempt, Note
+from sqlalchemy import inspect
+inspector = inspect(engine)
+tables = inspector.get_table_names()
+print('Tables:', tables)
+"
+
+Expected tables: users, videos, chat_messages, quizzes, quiz_attempts, notes, alembic_version
+
+================================================================================
+SECTION 3: FRONTEND - ENVIRONMENT VARIABLES
+================================================================================
+
+Create frontend environment file for production URLs.
+
+---- STEP 1: Create .env ----
+In video-rag-app/, create .env:
+
+    VITE_API_URL=http://localhost:8000/api
+    # For production, change to your server URL:
+    # VITE_API_URL=https://your-domain.com/api
+
+---- STEP 2: Rebuild Frontend ----
+cd video-rag-app
+npm run build
+
+Built files will be in: video-rag-app/dist/
+
+================================================================================
+SECTION 4: FRONTEND - AUTH GUARD (Recommended)
+================================================================================
+
+Currently all routes are accessible. Add auth protection.
+
+---- CURRENT STATE ----
+- Anyone can access /dashboard, /library, etc.
+- No check if user is logged in
+
+---- RECOMMENDED FIX ----
+Add ProtectedRoute component in App.jsx:
+
+// Already have AuthContext, just add redirect if not logged in
+
+Edit video-rag-app/src/App.jsx and add a wrapper:
+
+import { useAuth } from './context'
+import { Navigate } from 'react-router-dom'
+
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) return <div>Loading...</div>
+  if (!user) return <Navigate to="/auth" />
+  return children
+}
+
+Then wrap protected routes:
+<Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+
+================================================================================
+SECTION 5: VIDEO PROCESSING - LOCAL MODEL (Optional)
+================================================================================
+
+Currently video processing is simplified. For real transcription:
+
+---- OPTION A: Use Cloud Whisper (Free tier) ----
+Already integrated via openai-whisper. With GOOGLE_API_KEY set, it works.
+
+---- OPTION B: Use Local Whisper (100% Free) ----
+1. Install faster-whisper:
+   pip install faster-whisper
+
+2. Modify backend/app/services/video_processor.py to use local model
+
+This requires good hardware (8GB+ RAM). For demo, cloud whisper is fine.
+
+================================================================================
+SECTION 6: PRODUCTION CHECKLIST
+================================================================================
+
+Before deploying to production server:
+
+[ ] Set GOOGLE_API_KEY in backend/.env
+[ ] Test signup/login works at http://localhost:5173
+[ ] Test video upload works
+[ ] Test chat with a video (after uploading)
+[ ] Test quiz generation
+[ ] Build frontend: cd video-rag-app && npm run build
+[ ] Set proper domain in VITE_API_URL
+
+[ ] Optional: Add ProtectedRoute wrapper
+[ ] Optional: Set up PostgreSQL instead of SQLite
+
+================================================================================
+SECTION 7: QUICK START CHECKLIST
+================================================================================
+
+Run these commands to verify everything works:
+
+---- 1. Start Backend ----
+cd backend
+source .venv/bin/activate
+uvicorn app.main:app --reload --port 8000
+
+--- In another terminal ---
+
+---- 2. Start Frontend ----
+cd video-rag-app
+npm run dev
+
+---- 3. Test Flow ----
+1. Open http://localhost:5173
+2. Sign up with email/password
+3. Go to Library -> Add Video
+4. Try uploading a video or YouTube URL
+5. Go to Player -> Try chatting
+6. Go to Quiz -> Generate quiz
+
+If AI features fail, check GOOGLE_API_KEY is set correctly.
+
+================================================================================
+SECTION 8: COMMON ISSUES & FIXES
+================================================================================
+
+---- Issue: "No valid AI API key found" ----
+Fix: Create backend/.env with GOOGLE_API_KEY=your_key
+
+---- Issue: CORS error in browser console ----
+Fix: The backend already allows localhost:5173. Restart both servers.
+
+---- Issue: Video upload fails ----
+Fix: Check backend/uploads/ folder exists and has write permissions
+
+---- Issue: Chat returns error ----
+Fix: Need GOOGLE_API_KEY set + video must have transcript
+
+---- Issue: Quiz generation fails ----
+Fix: Need GOOGLE_API_KEY set + video must have transcript
+
+================================================================================
+SECTION 9: TECHNOLOGY SUMMARY
+================================================================================
+
+Final Stack:
+- Frontend: React 19 + Vite + TailwindCSS
+- Backend: FastAPI (Python)
+- Database: SQLite + ChromaDB
+- AI: Google Gemini (free tier) + Whisper
+
+API Required: Google Gemini (15 requests/min free)
+
+Cost: $0 for development and demo usage
+
+================================================================================
+END OF DOCUMENT
+================================================================================
+
+Last Updated: 2026-04-20
+Project: Video-RAG Application

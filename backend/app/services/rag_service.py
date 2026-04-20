@@ -6,39 +6,47 @@ import chromadb
 from chromadb.config import Settings as ChromaSettings
 from sqlalchemy.orm import Session
 from typing import List, Optional
-import re
+import asyncio
 
 from ..config import get_settings
 from ..models import Video
 
 settings = get_settings()
 
-# Initialize ChromaDB
 chroma_client = chromadb.PersistentClient(
     path=settings.chroma_persist_dir,
     settings=ChromaSettings(anonymized_telemetry=False)
 )
 
-# Get or create collection
 collection = chroma_client.get_or_create_collection(
     name="video_chunks",
     metadata={"hnsw:space": "cosine"}
 )
 
 
+def _is_valid_api_key(key: str) -> bool:
+    """Check if API key is valid (not placeholder)"""
+    return bool(key and not key.startswith('your-'))
+
+
+def _get_embedding_provider() -> str:
+    """Determine which embedding provider to use"""
+    if settings.google_api_key and _is_valid_api_key(settings.google_api_key):
+        return "google"
+    elif settings.openai_api_key and _is_valid_api_key(settings.openai_api_key):
+        return "openai"
+    return None
+
+
 def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> List[dict]:
     """Split text into overlapping chunks with approximate timestamps"""
     words = text.split()
     chunks = []
-    
-    # Estimate words per second (average speaking rate ~150 wpm = 2.5 wps)
     words_per_second = 2.5
     
     for i in range(0, len(words), chunk_size - overlap):
         chunk_words = words[i:i + chunk_size]
         chunk_text = " ".join(chunk_words)
-        
-        # Estimate timestamps
         start_time = int(i / words_per_second)
         end_time = int((i + len(chunk_words)) / words_per_second)
         
@@ -53,29 +61,36 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> List[dict
 
 
 async def get_embeddings(texts: List[str]) -> List[List[float]]:
-    """Get embeddings for texts using Google or OpenAI"""
-    # Check for valid Google API key (prioritize Google)
-    if settings.google_api_key and not settings.google_api_key.startswith('your-'):
+    """Get embeddings for texts using Google or OpenAI with batching"""
+    provider = _get_embedding_provider()
+    
+    if provider == "google":
         import google.generativeai as genai
         genai.configure(api_key=settings.google_api_key)
         
         embeddings = []
-        for text in texts:
-            result = genai.embed_content(
-                model="models/text-embedding-004",
-                content=text
+        batch_size = 10
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
+            results = await asyncio.to_thread(
+                lambda b: [
+                    genai.embed_content(model="models/text-embedding-004", content=t)['embedding']
+                    for t in b
+                ],
+                batch
             )
-            embeddings.append(result['embedding'])
+            embeddings.extend(results)
         return embeddings
     
-    # Fallback to OpenAI if valid key exists
-    elif settings.openai_api_key and not settings.openai_api_key.startswith('your-'):
+    elif provider == "openai":
         import openai
         client = openai.OpenAI(api_key=settings.openai_api_key)
         
-        response = client.embeddings.create(
-            model="text-embedding-ada-002",
-            input=texts
+        response = await asyncio.to_thread(
+            lambda: client.embeddings.create(
+                model="text-embedding-ada-002",
+                input=texts
+            )
         )
         return [e.embedding for e in response.data]
     
@@ -181,27 +196,31 @@ Context from video transcript:
 
 async def generate_llm_response(system_prompt: str, user_message: str) -> str:
     """Generate response using configured LLM"""
-    # Prioritize Google Gemini
-    if settings.google_api_key and not settings.google_api_key.startswith('your-'):
+    provider = _get_embedding_provider()
+    
+    if provider == "google":
         import google.generativeai as genai
         genai.configure(api_key=settings.google_api_key)
         
         model = genai.GenerativeModel('gemini-2.0-flash')
-        response = model.generate_content(f"{system_prompt}\n\nUser: {user_message}")
+        response = await asyncio.to_thread(
+            lambda: model.generate_content(f"{system_prompt}\n\nUser: {user_message}")
+        )
         return response.text
     
-    # Fallback to OpenAI
-    elif settings.openai_api_key and not settings.openai_api_key.startswith('your-'):
+    elif provider == "openai":
         import openai
         client = openai.OpenAI(api_key=settings.openai_api_key)
         
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.7
+        response = await asyncio.to_thread(
+            lambda: client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message}
+                ],
+                temperature=0.7
+            )
         )
         return response.choices[0].message.content
     

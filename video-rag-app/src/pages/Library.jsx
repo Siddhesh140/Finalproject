@@ -1,161 +1,243 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useVideos } from '../context'
-import { Header, VideoCard, BottomNavLibrary, PageLoader, ErrorMessage, EmptyState } from '../components'
+import { Sidebar } from '../components'
 
 export default function Library() {
     const { videos, loading, error, fetchVideos, deleteVideo } = useVideos()
-    const [activeTab, setActiveTab] = useState('All')
+    const [filter, setFilter] = useState('all')
     const [searchQuery, setSearchQuery] = useState('')
-    const tabs = ['All', 'Processed', 'Processing', 'Failed']
+    const [confirmDelete, setConfirmDelete] = useState(null)
+    const navigate = useNavigate()
 
-    // Fetch videos on mount
     useEffect(() => {
         fetchVideos()
     }, [fetchVideos])
 
-    // Filter videos based on tab and search
-    const filteredVideos = videos.filter((video) => {
-        // Tab filter
-        if (activeTab === 'Processed' && video.status !== 'completed') return false
-        if (activeTab === 'Processing' && !['pending', 'processing'].includes(video.status)) return false
-        if (activeTab === 'Failed' && video.status !== 'failed') return false
-
-        // Search filter
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase()
-            return video.title?.toLowerCase().includes(query)
-        }
-
-        return true
+    const filteredVideos = videos.filter(video => {
+        const matchesFilter = filter === 'all' || 
+            (filter === 'youtube' && video.source_type === 'youtube') ||
+            (filter === 'upload' && video.source_type === 'upload')
+        const matchesSearch = !searchQuery || 
+            video.title.toLowerCase().includes(searchQuery.toLowerCase())
+        return matchesFilter && matchesSearch
     })
 
-
+    const handleDelete = async (id) => {
+        try {
+            await deleteVideo(id)
+            setConfirmDelete(null)
+        } catch (err) {
+            console.error('Failed to delete:', err)
+        }
+    }
 
     return (
-        <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
-            <Header
-                title="Library"
-                icon={{ name: 'video_library', bg: 'bg-primary/10', color: 'text-primary' }}
-            />
-
-            {/* Sub-header with Search and Tabs */}
-            <div className="glass border-none sticky top-[72px] z-10 transition-all">
-                <div className="max-w-7xl mx-auto px-4 lg:px-8">
-                    {/* SearchBar */}
-                    <div className="py-4">
-                        <label className="flex flex-col max-w-2xl h-12 w-full">
-                            <div className="flex w-full flex-1 items-stretch rounded-xl h-full overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700">
-                                <div className="text-[#4c739a] dark:text-gray-400 flex bg-[#f0f4f8] dark:bg-slate-800 items-center justify-center pl-4">
-                                    <span className="material-symbols-outlined text-xl">search</span>
-                                </div>
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="flex w-full min-w-0 flex-1 border-none bg-[#f0f4f8] dark:bg-slate-800 text-[#0d141b] dark:text-white focus:ring-0 focus:outline-none h-full placeholder:text-[#4c739a] dark:placeholder:text-gray-400 px-4 pl-2 text-base font-normal leading-normal"
-                                    placeholder="Search your videos..."
-                                />
-                                {searchQuery && (
-                                    <button
-                                        onClick={() => setSearchQuery('')}
-                                        className="px-3 text-gray-400 hover:text-gray-600"
-                                    >
-                                        <span className="material-symbols-outlined">close</span>
-                                    </button>
-                                )}
-                            </div>
-                        </label>
-                    </div>
-
-                    {/* Tabs */}
-                    <div className="flex gap-2 lg:gap-4 overflow-x-auto pb-4 pt-2 no-scrollbar">
-                        {tabs.map((tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${activeTab === tab ? 'text-white shadow-lg shadow-primary/30' : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-slate-700'
-                                    }`}
-                            >
-                                {activeTab === tab && (
-                                    <motion.div
-                                        layoutId="activeLibraryTab"
-                                        className="absolute inset-0 bg-primary rounded-full z-0"
-                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                    />
-                                )}
-                                <span className="relative z-10 flex items-center gap-2">
-                                    {tab}
-                                    {tab !== 'All' && (
-                                        <span className={`text-xs ${activeTab === tab ? 'text-white/80' : 'text-gray-400'}`}>
-                                            {videos.filter(v =>
-                                                tab === 'Processed' ? v.status === 'completed' :
-                                                    tab === 'Processing' ? ['pending', 'processing'].includes(v.status) :
-                                                        tab === 'Failed' ? v.status === 'failed' : true
-                                            ).length}
-                                        </span>
-                                    )}
-                                </span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </div>
+        <div style={{ minHeight: '100vh', display: 'flex', background: 'var(--bg)' }}>
+            <Sidebar />
 
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 lg:px-8 py-6 pb-24 md:pb-10">
-                {loading && videos.length === 0 ? (
-                    <PageLoader text="Loading your library..." />
-                ) : error ? (
-                    <ErrorMessage message={error} onRetry={fetchVideos} />
-                ) : filteredVideos.length === 0 ? (
-                    <EmptyState
-                        icon={searchQuery ? 'search_off' : 'video_library'}
-                        title={searchQuery ? 'No results found' : 'Your library is empty'}
-                        message={
-                            searchQuery
-                                ? `No videos match "${searchQuery}"`
-                                : 'Start by processing a video from the dashboard'
-                        }
-                        action={
-                            !searchQuery
-                                ? { label: 'Add Video', icon: 'add', onClick: () => (window.location.href = '/dashboard') }
-                                : undefined
-                        }
-                    />
-                ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
-                        <AnimatePresence>
-                            {filteredVideos.map((video) => (
-                                <motion.div
-                                    key={video.id}
-                                    layout
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    transition={{ duration: 0.2 }}
+            <main className="main-content" style={{ flex: 1, paddingBottom: '80px', position: 'relative' }}>
+                <div className="page-container" style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+                    {/* Header */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="page-header" 
+                        style={{ marginBottom: '2.5rem' }}
+                    >
+                        <h1 style={{ fontSize: '3rem', fontWeight: 800, color: 'var(--text)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span>📚</span> My Library
+                        </h1>
+                        <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                            {videos.length} awesome videos in your collection! ✨
+                        </p>
+                    </motion.div>
+
+                    {/* Filters */}
+                    <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '2.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div className="search-bar glass-card" style={{ flex: 1, minWidth: 250, borderRadius: '24px', display: 'flex', padding: '0.75rem 1.5rem', border: '2px solid rgba(139, 92, 246, 0.2)' }}>
+                            <span style={{ fontSize: '1.5rem' }}>🔍</span>
+                            <input 
+                                type="text" 
+                                placeholder="Find a video..." 
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                style={{ border: 'none', background: 'transparent', outline: 'none', flex: 1, marginLeft: '1rem', fontSize: '1.1rem', color: 'var(--text)' }}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--surface)', padding: '0.5rem', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                            {['all', 'youtube', 'upload'].map((f) => (
+                                <motion.button 
+                                    key={f}
+                                    whileTap={{ scale: 0.95 }}
+                                    className={`tab ${filter === f ? 'active' : ''}`}
+                                    onClick={() => setFilter(f)}
+                                    style={{ 
+                                        borderRadius: '16px', 
+                                        fontWeight: 600,
+                                        padding: '0.75rem 1.5rem',
+                                        background: filter === f ? 'linear-gradient(135deg, #137fec 0%, #8b5cf6 100%)' : 'transparent',
+                                        color: filter === f ? 'white' : 'var(--text-secondary)'
+                                    }}
                                 >
-                                    <VideoCard video={video} />
-                                </motion.div>
+                                    {f === 'all' ? '🌈 All' : f === 'youtube' ? '🔴 YouTube' : '📁 Uploads'}
+                                </motion.button>
                             ))}
-                        </AnimatePresence>
+                        </div>
                     </div>
-                )}
+
+                    {/* Video Grid */}
+                    {loading ? (
+                        <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
+                            <div className="app-loading"></div>
+                        </div>
+                    ) : filteredVideos.length === 0 ? (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="glass-card" 
+                            style={{ textAlign: 'center', padding: '4rem 2rem', borderRadius: '32px' }}
+                        >
+                            <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>🏜️</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>No videos found!</div>
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                                {searchQuery 
+                                    ? 'Try looking for something else!' 
+                                    : 'Start adding cool videos!'}
+                            </p>
+                            <Link to="/dashboard" className="btn btn-primary" style={{ padding: '1rem 2rem', borderRadius: '100px', background: 'linear-gradient(135deg, #137fec 0%, #8b5cf6 100%)', textDecoration: 'none' }}>
+                                <span style={{ fontSize: '1.5rem', marginRight: '0.5rem' }}>➕</span>
+                                Find a Video
+                            </Link>
+                        </motion.div>
+                    ) : (
+                        <motion.div layout className="grid-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '2rem' }}>
+                            <AnimatePresence>
+                                {filteredVideos.map(video => (
+                                    <motion.div 
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                        whileHover={{ scale: 1.03, y: -5 }}
+                                        key={video.id} 
+                                        className="glass-card" 
+                                        style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden' }}
+                                    >
+                                        <Link to={`/player/${video.id}`} style={{ textDecoration: 'none' }}>
+                                            <div style={{ aspectRatio: '16/9', background: 'var(--surface-hover)', position: 'relative' }}>
+                                                {video.thumbnail_url ? (
+                                                    <img src={video.thumbnail_url} alt={video.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <span style={{ fontSize: '3rem' }}>▶️</span>
+                                                    </div>
+                                                )}
+                                                {video.duration && (
+                                                    <span style={{ position: 'absolute', bottom: '0.5rem', right: '0.5rem', background: 'rgba(0,0,0,0.8)', color: 'white', padding: '0.2rem 0.5rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600 }}>
+                                                        {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
+                                                    </span>
+                                                )}
+                                                <div style={{ 
+                                                    position: 'absolute', 
+                                                    top: 8, 
+                                                    left: 8,
+                                                    background: video.source_type === 'youtube' ? 'rgba(255,0,0,0.9)' : 'var(--primary)',
+                                                    color: 'white',
+                                                    padding: '4px 12px',
+                                                    borderRadius: '100px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 700,
+                                                    boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                                                }}>
+                                                    {video.source_type === 'youtube' ? '🔴 YT' : '📁 FILE'}
+                                                </div>
+                                            </div>
+                                        </Link>
+                                        <div style={{ padding: '1.25rem' }}>
+                                            <Link to={`/player/${video.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                                                <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.75rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{video.title}</div>
+                                            </Link>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 500 }}>{new Date(video.created_at).toLocaleDateString()}</span>
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <motion.button 
+                                                        whileHover={{ scale: 1.1 }}
+                                                        whileTap={{ scale: 0.9 }}
+                                                        onClick={() => navigate(`/player/${video.id}`)}
+                                                        style={{ 
+                                                            width: '36px', height: '36px',
+                                                            border: 'none',
+                                                            background: 'rgba(19, 127, 236, 0.1)',
+                                                            color: '#137fec',
+                                                            borderRadius: '12px',
+                                                            cursor: 'pointer',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                        }}
+                                                    >
+                                                        <span style={{ fontSize: '1.2rem' }}>▶️</span>
+                                                    </motion.button>
+                                                    <motion.button 
+                                                        whileHover={{ scale: 1.1, background: 'var(--error)', color: 'white' }}
+                                                        whileTap={{ scale: 0.9 }}
+                                                        onClick={() => setConfirmDelete(video.id)}
+                                                        style={{ 
+                                                            width: '36px', height: '36px',
+                                                            border: 'none',
+                                                            background: 'rgba(253, 111, 133, 0.1)',
+                                                            color: '#FD6F85',
+                                                            borderRadius: '12px',
+                                                            cursor: 'pointer',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            transition: 'background 0.2s'
+                                                        }}
+                                                    >
+                                                        <span style={{ fontSize: '1.2rem' }}>🗑️</span>
+                                                    </motion.button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    {/* Delete Confirmation */}
+                                    {confirmDelete === video.id && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            background: 'rgba(0,0,0,0.9)',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '1rem',
+                                            borderRadius: 'var(--radius-lg)'
+                                        }}>
+                                            <p style={{ color: 'white', fontWeight: 500 }}>Delete this video?</p>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button 
+                                                    onClick={() => handleDelete(video.id)}
+                                                    className="btn"
+                                                    style={{ background: 'var(--error)', color: 'white' }}
+                                                >
+                                                    Delete
+                                                </button>
+                                                <button 
+                                                    onClick={() => setConfirmDelete(null)}
+                                                    className="btn btn-secondary"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </motion.div>
+                    )}
+                </div>
             </main>
-
-            {/* Mobile Bottom Nav */}
-            <div className="md:hidden">
-                <BottomNavLibrary />
-            </div>
-
-            {/* Floating Action Button */}
-            <Link
-                to="/dashboard"
-                className="fixed bottom-24 md:bottom-8 right-6 lg:right-10 flex items-center justify-center size-14 lg:size-16 rounded-full bg-primary text-white shadow-xl hover:scale-105 active:scale-95 transition-transform"
-            >
-                <span className="material-symbols-outlined text-2xl lg:text-3xl">add</span>
-            </Link>
         </div>
     )
 }
